@@ -67,9 +67,9 @@ class Drive:
         self.node.sdo[0x6040].raw = 0x0F
 
     def readyToSwitchOn(self):
-        self.node.sdo[0x6040].raw = 0x0D
+        self.node.sdo[0x6040].raw = 0x0D # ??? Ready to Switch On is 0x06 (shutdown)
 
-    def quickStop(self):
+    def quickStop(self): # ???
         self.node.sdo[0x6040].raw = 0x02
         self.node.sdo[0x6040].raw = 0x00
         self.node.sdo[0x6040].raw = 0x06
