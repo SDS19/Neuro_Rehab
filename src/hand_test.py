@@ -15,11 +15,11 @@ network = canopen.Network()
 network.connect(channel='can0', bustype='socketcan', bitrate=125000)
 
 # add a node with node_id and OD to the network
-node_1 = network.add_node(1, '/home/pi/Test/mclm.eds')
-node_2 = network.add_node(2, '/home/pi/Test/mclm.eds')
+# node_1 = network.add_node(1, '/home/pi/Test/mclm.eds')
+# node_2 = network.add_node(2, '/home/pi/Test/mclm.eds')
 
-# node_1 = Hand.HandDrive(network, 127)
-# node_2 = Hand.HandDrive(network, 126)
+node_1 = Hand.HandDrive(network, 1)
+node_2 = Hand.HandDrive(network, 2)
 
 """ ******************** NMT state 'Pre-operational' => SDO / NMT available ******************** """
 
