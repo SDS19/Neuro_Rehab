@@ -15,11 +15,11 @@ network = canopen.Network()
 network.connect(channel='can0', bustype='socketcan', bitrate=125000)
 
 # add a node with node_id and OD to the network
-# node_1 = network.add_node(1, '/home/pi/Test/mclm.eds')
-# node_2 = network.add_node(2, '/home/pi/Test/mclm.eds')
+node_1 = network.add_node(1, '/home/pi/Test/mclm.eds')
+node_2 = network.add_node(2, '/home/pi/Test/mclm.eds')
 
-node_1 = Hand.HandDrive(network, 1)
-node_2 = Hand.HandDrive(network, 2)
+# node_1 = Hand.HandDrive(1, network)
+# node_2 = Hand.HandDrive(2, network)
 
 """ ******************** NMT state 'Pre-operational' => SDO / NMT available ******************** """
 
@@ -36,6 +36,7 @@ print('node_2 state: ' + node_2.nmt.state)
 
 # change state of all nodes to 'Operational' simultaneously as a broadcast message
 network.nmt.state = 'OPERATIONAL'
+time.sleep(0.5)
 print('node_1 state: ' + node_1.nmt.state)
 print('node_2 state: ' + node_2.nmt.state)
 
@@ -54,10 +55,44 @@ for node_id in network.scanner.nodes:
 
 """ ********** test 2022.10.25 ********** """
 
-""" ******************** PDO ******************** """
+""" ******************** PDO: read real-time speed and position ******************** """
 
-# PDO通信
+# read current PDO configuration
+print(node_1.tpdo.read())
+print(node_1.rpdo.read())
+
+# change the PDO1 configuration
+node_1.tpdo[1].clear()
+node_1.tpdo[1].add_variable('Position Actual Value')  # 0x6064
+node_1.tpdo[1].add_variable('Velocity Actual Value')  # 0x606C
+# 0 ~ 255
+# 0: 非循环同步
+# 1: 循环同步
+# 252: 远程同步
+# 253: 远程异步
+# 254: 异步，vendor specific
+node_1.tpdo[1].trans_type = 254  #
+node_1.tpdo[1].event_timer = 10  # ms
+node_1.tpdo[1].enabled = True
+
+# new configuration must be saved in pre-operational mode
+network.nmt.state = 'PRE-OPERATIONAL'
+node_1.tpdo.save()
+
+network.nmt.state = 'OPERATIONAL'
+
+
+def print_speed(message):
+    print('%s received' % message.name)
+    for var in message:
+        print('%s = %d' % (var.name, var.raw))
+
+
+node_1.tpdo[1].add_callback(print_speed)
+time.sleep(0.5)
 
 cycle = 1
 target_velo_1 = 0x14
 target_velo_2 = 0x14
+
+""" ******************** GUI ******************** """
