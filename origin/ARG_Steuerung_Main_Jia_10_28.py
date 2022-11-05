@@ -1068,8 +1068,10 @@ network.connect(channel='can0', bustype='socketcan', bitrate=125000)
 node_1 = hand.Drive(network, 127)
 node_2 = hand.Drive(network, 126)
 
-hand_cycle = 1
-target_velo_1 = 0x14
+hand_cycle = 1  # 循环次数
+
+# target velocity
+target_velo_1 = 0x14  # 0x14 -> Error Output P137 ???
 target_velo_2 = 0x14
 
 
@@ -1509,6 +1511,7 @@ while True:
                 node.distance = round(abs(node.end_position - node.start_position), 2)
                 window[label].update(node.distance * node.posi_factor)
 
+            # 1133
             if event in (None, "set_start_posi_1"):
                 node_1.start_position = node_1.getActualPosition()
                 window['start_posi_1'].update(node_1.start_position * node_1.posi_factor)
@@ -1525,36 +1528,39 @@ while True:
                 # window['distance_2'].update(node_2.distance * node_2.posi_factor)
                 break
 
+            # 1141
             if event in (None, "set_end_posi_1"):
                 node_1.end_position = node_1.getActualPosition()
                 window['end_posi_1'].update(node_1.end_position * node_1.posi_factor)
-                node_1.distance = round(abs(node_1.end_position - node_1.start_position))
-                window['distance_1'].update(node_1.distance * node_1.posi_factor)
+                update_range(node_1, "distance_1")
+                # node_1.distance = round(abs(node_1.end_position - node_1.start_position))
+                # window['distance_1'].update(node_1.distance * node_1.posi_factor)
                 break
 
             if event in (None, "set_end_posi_2"):
                 node_2.end_position = node_2.getActualPosition()
                 window['end_posi_2'].update(node_2.end_position * node_2.posi_factor)
-                node_2.distance = round(abs(node_2.end_position - node_2.start_position))
-                window['distance_2'].update(node_2.distance * node_2.posi_factor)
+                update_range(node_2, "distance_2")
+                # node_2.distance = round(abs(node_2.end_position - node_2.start_position))
+                # window['distance_2'].update(node_2.distance * node_2.posi_factor)
                 break
 
+            # 1163
             if event in (None, "hand_cycle_save"):
                 hand_cycle = int(values['hand_cycle'])
-                window['hand_cycle'].update(hand_cycle)
+                window['hand_cycle'].update(hand_cycle)  # 多余
                 break
 
             if event in (None, "velo_save_1"):
                 target_velo_1 = int(values['velo_1'])
-                node_1.setTargetVelo(target_velo_1)
+                node_1.set_target_velocity(target_velo_1)
 
                 window['velo_1'].update(target_velo_1)
                 break
 
             if event in (None, "velo_save_2"):
                 target_velo_2 = int(values['velo_2'])
-                node_2.setTargetVelo(target_velo_2)
-
+                node_2.set_target_velocity(target_velo_2)
                 window['velo_1'].update(target_velo_1)
                 break
 
@@ -1569,9 +1575,7 @@ while True:
                 break
 
             if event in (None, "Homing 1"):
-
                 node_1.switchOn()
-
                 node_1.setHomingMode()
                 node_1.homing()
 
