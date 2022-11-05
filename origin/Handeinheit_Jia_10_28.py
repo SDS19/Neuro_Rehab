@@ -41,6 +41,7 @@ class Drive:
 
     # switch on/off
     """ ********** start 2022.11.1 ********** """
+
     def switchOn(self):
 
         # state to SWITCHED ON (manuel Page 74)
@@ -69,48 +70,47 @@ class Drive:
         self.node.sdo[0x6040].raw = 0x00
         self.node.sdo[0x6040].raw = 0x06
 
-    def checkOperationMode(self, mode):
+    # def checkOperationMode(self, mode):
+    #     if mode == 1:
+    #         print("Profile Position Mode")
+    #     if mode == 6:
+    #         print("Homing Mode")
 
+    def operation_mode(mode):
         if mode == 1:
-            print("Profile Position Mode")
-        if mode == 6:
-            print("Homing Mode")
+            print('Position Mode')
+        elif mode == 3:
+            print('Velocity Mode')
+        elif mode == 6:
+            print('Homing Mode')
+        elif mode == -1:
+            print('FAULHABER Mode')
 
     def setHomingMode(self):
-
         self.node.sdo[0x6060].raw = 0x06
         mode = self.node.sdo[0x6061].raw
-        self.checkOperationMode(mode)
-
+        self.operation_mode(mode)
         self.node.sdo[0x6098].raw = 0x23
 
     def homing(self):
         self.node.sdo[0x6040].bits[4] = 1
 
     def setProfPosiMode(self):
-
         self.node.sdo[0x6060].raw = 0x01
-
         mode = self.node.sdo[0x6061].raw
-        self.checkOperationMode(mode)
-
+        self.operation_mode(mode)
         self.node.sdo[0x6067].raw = 0x3E8
 
     def setNegDirection(self):
         self.node.sdo[0x607E].bits[7] = 1
 
     def profPosiMode(self, target):
-
         print("Target: " + str(target))
-
         self.node.sdo[0x607A].raw = target
-
         self.node.sdo[0x6040].raw = 0x3F
 
     def setCycPosiMode(self):
-
         self.node.sdo[0x6060].raw = 0x08
-
         mode = self.node.sdo[0x6061].raw
         print(mode)
 
@@ -131,8 +131,6 @@ class Drive:
     def deactiveLimits(self):
         # self.node.sdo['Activate Position Limits in Position Mode'].raw = 0
         self.node.sdo[0x2338][3].raw = 0
-
-
 
     def getPosiFactor(self):
         # ??? 0x6093: Position Factor
