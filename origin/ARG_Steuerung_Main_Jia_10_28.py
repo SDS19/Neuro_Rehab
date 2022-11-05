@@ -1075,12 +1075,19 @@ target_velo_1 = 0x14  # 0x14 -> Error Output P137 ???
 target_velo_2 = 0x14
 
 
-def setMoveHand():
-    node_1.setProfPosiMode()
-    node_2.setProfPosiMode()
-    node_2.setNegDirection()
-    node_1.deactiveLimits()
-    node_2.deactiveLimits()
+# def setMoveHand():
+#     node_1.setProfPosiMode()
+#     node_2.setProfPosiMode()
+#     node_2.setNegDirection()
+#     node_1.deactiveLimits()
+#     node_2.deactiveLimits()
+
+def set_position_mode():
+    node_1.set_profile_position_mode()
+    node_2.set_profile_position_mode()
+    node_2.setNegDirection()  # ???
+    node_1.position_limits_off()
+    node_2.position_limits_off()
 
 
 def moveHand():
@@ -1171,23 +1178,19 @@ frame_hand_move = [[sg.Text("Power: ", size=(14, 2), font="Any 20"),
                     sg.Button("Homing 1", size=(7, 2), font="Any 20", button_color=("white", "grey")),
                     sg.Button("Homing 2", size=(7, 2), font="Any 20", button_color=("white", "grey"))],
                    [sg.Text("Repetition Mode:", size=(14, 2), font="Any 20"),
+                    # node_start
                     sg.Button("Start", size=(7, 2), font="Any 20", button_color=("white", "black"), key="node_start"),
-                    sg.Button("Stop", size=(7, 2), font="Any 20", button_color=("white", "black"), key="node_stop")]
-                   ]
+                    # node_stop
+                    sg.Button("Stop", size=(7, 2), font="Any 20", button_color=("white", "black"), key="node_stop")]]
 
 frame_hand_info = [[sg.Text("Actual Position:", size=(14, 2), font="Any 15")],
                    [sg.Text("Drive 1: ", size=(7, 2), font="Any 15"),
-                    sg.Text(node_1.getActualPosition() * node_1.posi_factor, size=(7, 2), font="Any 15",
-                            key="act_posi_1")],
+                    sg.Text(node_1.getActualPosition() * node_1.posi_factor, size=(7, 2), font="Any 15", key="act_posi_1")],
                    [sg.Text("Drive 2: ", size=(7, 2), font="Any 15"),
-                    sg.Text(node_2.getActualPosition() * node_2.posi_factor, size=(7, 2), font="Any 15",
-                            key="act_posi_2")],
+                    sg.Text(node_2.getActualPosition() * node_2.posi_factor, size=(7, 2), font="Any 15", key="act_posi_2")],
                    [sg.Text("Aperture: ", size=(8, 2), font="Any 15"),
-                    sg.Text(str(calcAperture(node_1.distance * node_1.posi_factor)), size=(7, 2), font="Any 15",
-                            key="aperture")],
-                   [sg.Button("Update", size=(14, 2), font="Any 15", button_color=("white", "grey"),
-                              key="hand_info_update")]
-                   ]
+                    sg.Text(str(calcAperture(node_1.distance * node_1.posi_factor)), size=(7, 2), font="Any 15", key="aperture")],
+                   [sg.Button("Update", size=(14, 2), font="Any 15", button_color=("white", "grey"), key="hand_info_update")]]
 
 """ **************************************** Hand GUI end **************************************** """
 
@@ -1602,12 +1605,13 @@ while True:
 
                 break
 
+            # 1175
             if event in (None, "node_start"):
-
                 node_1.switchOn()
                 node_2.switchOn()
 
-                setMoveHand()
+                # setMoveHand()
+                set_position_mode()
 
                 for i in range(0, hand_cycle):
                     moveHand()
