@@ -1554,14 +1554,13 @@ while True:
             if event in (None, "velo_save_1"):
                 target_velo_1 = int(values['velo_1'])
                 node_1.set_target_velocity(target_velo_1)
-
-                window['velo_1'].update(target_velo_1)
+                window['velo_1'].update(target_velo_1)  # 多余
                 break
 
             if event in (None, "velo_save_2"):
                 target_velo_2 = int(values['velo_2'])
                 node_2.set_target_velocity(target_velo_2)
-                window['velo_1'].update(target_velo_1)
+                window['velo_2'].update(target_velo_2)  # 多余
                 break
 
             if event in (None, "ON"):
