@@ -133,9 +133,14 @@ class Drive:
 
     '''******************** set value ********************'''
 
-    def deactiveLimits(self):
-        # self.node.sdo['Activate Position Limits in Position Mode'].raw = 0
+    # def deactiveLimits(self):
+    #     # self.node.sdo['Activate Position Limits in Position Mode'].raw = 0
+    #     self.node.sdo[0x2338][3].raw = 0
+
+    # 0x2338: General Settings -> 3: Active Position Limits in Position Mode
+    def position_limits_off(self):
         self.node.sdo[0x2338][3].raw = 0
+        print(self.node.sdo[0x2338][3].raw)
 
     def getPosiFactor(self):
         # ??? 0x6093: Position Factor
