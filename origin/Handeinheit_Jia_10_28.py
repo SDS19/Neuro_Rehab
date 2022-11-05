@@ -78,9 +78,9 @@ class Drive:
 
     def operation_mode(mode):
         if mode == 1:
-            print('Position Mode')
+            print('Profile Position Mode')
         elif mode == 3:
-            print('Velocity Mode')
+            print('Profile Velocity Mode')
         elif mode == 6:
             print('Homing Mode')
         elif mode == -1:
@@ -95,11 +95,16 @@ class Drive:
     def homing(self):
         self.node.sdo[0x6040].bits[4] = 1
 
-    def setProfPosiMode(self):
-        self.node.sdo[0x6060].raw = 0x01
-        mode = self.node.sdo[0x6061].raw
-        self.operation_mode(mode)
-        self.node.sdo[0x6067].raw = 0x3E8
+    # def setProfPosiMode(self):
+    #     self.node.sdo[0x6060].raw = 0x01
+    #     mode = self.node.sdo[0x6061].raw
+    #     self.operation_mode(mode)
+    #     self.node.sdo[0x6067].raw = 0x3E8
+
+    def set_profile_position_mode(self):
+        self.node.sdo['Modes of Operation'].raw = 0x01  # 0x6060: Modes of Operation -> 0x01: Profile Position Mode
+        self.operation_mode(self.node.sdo['Modes of Operation Display'].raw)  # 0x6061: Modes of Operation Display
+        self.node.sdo[0x6067].raw = 0x3E8  # ???
 
     def setNegDirection(self):
         self.node.sdo[0x607E].bits[7] = 1
