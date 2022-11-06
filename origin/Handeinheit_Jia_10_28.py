@@ -20,6 +20,7 @@ class Drive:
 
         self.node = BaseNode402(adress, '/home/pi/Test/mclm.eds')
         network.add_node(self.node)
+
         self.node.nmt.state = 'OPERATIONAL'
         print("set Operational Mode")
 
@@ -39,29 +40,45 @@ class Drive:
 
         # self.velo_factor = self.getVeloFactor()
 
-    # switch on/off
+    """ ********** CiA 402 CANopen Device Profile - begin **********
+    This device profile has a >>control state machine<< for controlling the behavior of the drive.
+    
+    Switch On Disabled 
+    - Shutdown => Ready to Switch On 
+    - Switch On => Switched On
+    - Enable Operation => Operation Enabled
+    - Disable Operation => Switched On
+    """
 
-    """ ********** start 2022.11.1 ********** """
+    def run(self):
+        self.shut_down()
+
 
     def switchOn(self):
+        self.node.sdo[0x6040].raw = 0x07
+        # state to OPERATION ENABLED
+        # self.node.state = 'OPERATION ENABLED'
+        self.node.sdo[0x6040].raw = 0x0F
 
-        # state to SWITCHED ON (manuel Page 74)
+    # P74 change state => Switched On
+    def switch_on(self):
         # self.node.state = 'SWITCHED ON'
         self.node.sdo[0x6040].raw = 0x07
+        print(str(self.node.sdo[0x6041].raw))
 
-        # state to OPERATION ENABLED
-        # self.node.state = 'OPERATION ENABLED'
-        self.node.sdo[0x6040].raw = 0x0F
+    # def switchOff(self):
+    #     self.node.sdo[0x6040].raw = 0x06
 
-    def switchOff(self):
-
+    def shut_down(self):
         self.node.sdo[0x6040].raw = 0x06
+        print("shut down => Ready to Switch On: " + str(self.node.sdo[0x6041].raw))
 
-    def operationEnable(self):
-
-        # state to OPERATION ENABLED
+    # change state => Operation Enabled
+    def enable_operation(self):
         # self.node.state = 'OPERATION ENABLED'
         self.node.sdo[0x6040].raw = 0x0F
+
+
 
     def readyToSwitchOn(self):
         self.node.sdo[0x6040].raw = 0x0D
@@ -70,6 +87,8 @@ class Drive:
         self.node.sdo[0x6040].raw = 0x02
         self.node.sdo[0x6040].raw = 0x00
         self.node.sdo[0x6040].raw = 0x06
+
+    """ ********** CiA 402 CANopen Device Profile - end ********** """
 
     # def checkOperationMode(self, mode):
     #     if mode == 1:
