@@ -29,10 +29,11 @@ class Drive:
         # self.node.sdo[0x6040].raw = 0x06
 
         self.start_position = 0
-
         self.end_position = 0
 
         self.distance = 0
+
+        self.velocity = 0x14
 
         self.posi_factor = self.getPosiFactor()
 
@@ -80,6 +81,9 @@ class Drive:
     def quick_stop(self):
         self.node.sdo[0x6040].raw = 0x02
         print("quick stop => Switch On Disabled: " + self.node.sdo[0x6041].raw)
+
+    def halt(self):
+        self.node.sdo[0x6040].bits[8] = 1  # stop drive
 
     # no use
     def disable_voltage(self):
@@ -141,11 +145,9 @@ class Drive:
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
     def set_target_position(self, target_position):
         self.node.sdo['Target Position'].raw = target_position
-        self.node.sdo[0x6040].bits[4] = 1
+        self.node.sdo[0x6040].bits[4] = 1  # set neu target position
         print(self.node.sdo[0x6041].bits[12].raw)
-
-    # def getActualPosition(self):
-    #     return self.node.sdo['Position Actual Value'].raw
+        # print(self.node.sdo[0x6041].bits[10].raw)
 
     # P80 => Position Factor
     # 0x6063: Position Actual Internal Value (in internen Einheiten)

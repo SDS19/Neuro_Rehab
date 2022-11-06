@@ -1076,13 +1076,6 @@ target_velo_1 = 0x14  # 0x14 -> Error Output P137 ???
 target_velo_2 = 0x14
 
 
-# def setMoveHand():
-#     node_1.setProfPosiMode()
-#     node_2.setProfPosiMode()
-#     node_2.setNegDirection()
-#     node_1.deactiveLimits()
-#     node_2.deactiveLimits()
-
 def set_position_mode():
     node_1.set_profile_position_mode()
     node_2.set_profile_position_mode()
@@ -1100,13 +1093,13 @@ def moveHand():
     while node_1.get_actual_velocity() != 0 or node_2.get_actual_velocity() != 0:
         time.sleep(0.1)
 
-    # 0x6041: Statusword -> 10: Target reached
+    # 0x6041: Statusword -> 10: Target reached 可省略
     print("node_1 Statusword: " + str(node_1.node.sdo[0x6041].bits[10]))
     print("node_2 Statusword: " + str(node_2.node.sdo[0x6041].bits[10]))
 
     # print actual position
-    node_1.get_actual_position()
-    node_2.get_actual_position()
+    # node_1.get_actual_position()
+    # node_2.get_actual_position()
 
     # node_1.switchOn()
     # node_2.switchOn()
@@ -1118,15 +1111,14 @@ def moveHand():
     node_1.set_target_position(node_1.start_position)
     node_2.set_target_position(node_2.start_position)
 
-    while (node_1.getActualVelocity() != 0 or node_2.getActualVelocity() != 0):
+    while node_1.getActualVelocity() != 0 or node_2.getActualVelocity() != 0:
         time.sleep(0.1)
 
     print("1 reached:" + str(node_1.node.sdo[0x6041].bits[10]))
     print("2 reached:" + str(node_2.node.sdo[0x6041].bits[10]))
 
-    print("Position 1: " + str(node_1.get_actual_position()))
-    print("Position 2: " + str(node_2.get_actual_position()))
-    print('\n')
+    # print("Position 1: " + str(node_1.get_actual_position()))
+    # print("Position 2: " + str(node_2.get_actual_position()))
 
     # node_1.switchOn()
     # node_2.switchOn()
@@ -1134,8 +1126,16 @@ def moveHand():
     node_2.operation_enabled()
 
 
-def set_start_position(node):
+def move():
+    set_target_position(node_1)
+    set_target_position(node_2)
+    node_1.operation_enabled()
+    node_2.operation_enabled()
+
+
+def set_target_position(node):
     node.set_target_position(node.end_position)
+    node.set_target_position(node.start_position)
 
 
 def calcAperture(stroke):
@@ -1656,7 +1656,7 @@ while True:
 
                 # node_1.switchOff()
                 # node_2.switchOff()
-                node_1.shut_down() # 可省略
+                node_1.shut_down()  # 可省略
                 node_2.shut_down()
 
                 window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
