@@ -40,7 +40,7 @@ class Drive:
 
         # self.velo_factor = self.getVeloFactor()
 
-    """ ********** CiA 402 CANopen Device Profile - begin **********
+    """ ********** P74 CiA 402 CANopen Device Profile - begin **********
     This device profile has a >>control state machine<< for controlling the behavior of the drive.
     
     Switch On Disabled 
@@ -50,43 +50,31 @@ class Drive:
     - Disable Operation => Switched On
     """
 
-    def run(self):
+    def start(self):
         self.shut_down()
-
-
-    def switchOn(self):
-        self.node.sdo[0x6040].raw = 0x07
-        # state to OPERATION ENABLED
-        # self.node.state = 'OPERATION ENABLED'
-        self.node.sdo[0x6040].raw = 0x0F
-
-    # P74 change state => Switched On
-    def switch_on(self):
-        # self.node.state = 'SWITCHED ON'
-        self.node.sdo[0x6040].raw = 0x07
-        print(str(self.node.sdo[0x6041].raw))
+        self.switch_on()
+        self.enable_operation()
 
     # def switchOff(self):
     #     self.node.sdo[0x6040].raw = 0x06
 
     def shut_down(self):
         self.node.sdo[0x6040].raw = 0x06
-        print("shut down => Ready to Switch On: " + str(self.node.sdo[0x6041].raw))
+        print("shut down => Ready to Switch On: " + self.node.sdo[0x6041].raw)
 
-    # change state => Operation Enabled
+    def switchOn(self):
+        self.node.sdo[0x6040].raw = 0x07
+        self.node.sdo[0x6040].raw = 0x0F
+
+    def switch_on(self):
+        # self.node.state = 'SWITCHED ON'
+        self.node.sdo[0x6040].raw = 0x07
+        print("switch on => Ready to Switch On: " + self.node.sdo[0x6041].raw)
+
     def enable_operation(self):
         # self.node.state = 'OPERATION ENABLED'
         self.node.sdo[0x6040].raw = 0x0F
-
-
-
-    def readyToSwitchOn(self):
-        self.node.sdo[0x6040].raw = 0x0D
-
-    def quickStop(self):
-        self.node.sdo[0x6040].raw = 0x02
-        self.node.sdo[0x6040].raw = 0x00
-        self.node.sdo[0x6040].raw = 0x06
+        print("enable operation => Operation Enabled: " + self.node.sdo[0x6041].raw)
 
     """ ********** CiA 402 CANopen Device Profile - end ********** """
 
