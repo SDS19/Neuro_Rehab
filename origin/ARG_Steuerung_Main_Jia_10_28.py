@@ -16,6 +16,7 @@ from canopen.profiles.p402 import BaseNode402
 # if true, print all all calculated necessary paramters
 debug = False
 
+
 # class of stepper motor
 class Motor:
     def __init__(self, IP_Adress, Port, Axis):
@@ -1091,8 +1092,31 @@ def set_position_mode():
 
 
 def moveHand():
-    node_1.profPosiMode(node_1.end_position)
-    node_2.profPosiMode(node_2.end_position)
+    # node_1.profPosiMode(node_1.end_position)
+    # node_2.profPosiMode(node_2.end_position)
+    node_1.set_target_position(node_1.end_position)
+    node_2.set_target_position(node_2.end_position)
+
+    while node_1.get_actual_velocity() != 0 or node_2.get_actual_velocity() != 0:
+        time.sleep(0.1)
+
+    # 0x6041: Statusword -> 10: Target reached
+    print("node_1 Statusword: " + str(node_1.node.sdo[0x6041].bits[10]))
+    print("node_2 Statusword: " + str(node_2.node.sdo[0x6041].bits[10]))
+
+    # print actual position
+    node_1.get_actual_position()
+    node_2.get_actual_position()
+
+    # node_1.switchOn()
+    # node_2.switchOn()
+    node_1.operation_enabled()
+    node_2.operation_enabled()
+
+    # node_1.profPosiMode(node_1.start_position)
+    # node_2.profPosiMode(node_2.start_position)
+    node_1.set_target_position(node_1.start_position)
+    node_2.set_target_position(node_2.start_position)
 
     while (node_1.getActualVelocity() != 0 or node_2.getActualVelocity() != 0):
         time.sleep(0.1)
@@ -1100,28 +1124,18 @@ def moveHand():
     print("1 reached:" + str(node_1.node.sdo[0x6041].bits[10]))
     print("2 reached:" + str(node_2.node.sdo[0x6041].bits[10]))
 
-    print("Position 1: " + str(node_1.getActualPosition()))
-    print("Position 2: " + str(node_2.getActualPosition()))
+    print("Position 1: " + str(node_1.get_actual_position()))
+    print("Position 2: " + str(node_2.get_actual_position()))
     print('\n')
 
-    node_1.switchOn()
-    node_2.switchOn()
+    # node_1.switchOn()
+    # node_2.switchOn()
+    node_1.operation_enabled()
+    node_2.operation_enabled()
 
-    node_1.profPosiMode(node_1.start_position)
-    node_2.profPosiMode(node_2.start_position)
 
-    while (node_1.getActualVelocity() != 0 or node_2.getActualVelocity() != 0):
-        time.sleep(0.1)
-
-    print("1 reached:" + str(node_1.node.sdo[0x6041].bits[10]))
-    print("2 reached:" + str(node_2.node.sdo[0x6041].bits[10]))
-
-    print("Position 1: " + str(node_1.getActualPosition()))
-    print("Position 2: " + str(node_2.getActualPosition()))
-    print('\n')
-
-    node_1.switchOn()
-    node_2.switchOn()
+def set_start_position(node):
+    node.set_target_position(node.end_position)
 
 
 def calcAperture(stroke):
@@ -1139,10 +1153,12 @@ frame_hand_setup = [[sg.Text('Drive 1', size=(28, 2), font="Any 20"), sg.Text('D
                     [sg.Text('Start point 1:', size=(11, 2), font="Any 20"),
                      sg.Text(node_1.start_position, size=(7, 2), font="Any 20", key="start_posi_1"),
                      # set_start_posi_1
-                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"), key="set_start_posi_1"),
+                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"),
+                               key="set_start_posi_1"),
                      sg.Text('Start point 2:', size=(11, 2), font="Any 20"),
                      sg.Text(node_2.start_position, size=(7, 2), font="Any 20", key="start_posi_2"),
-                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"),key="set_start_posi_2")],
+                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"),
+                               key="set_start_posi_2")],
 
                     [sg.Text('End point 1:', size=(11, 2), font="Any 20"),
                      sg.Text(node_1.end_position, size=(7, 2), font="Any 20", key="end_posi_1"),
@@ -1150,7 +1166,8 @@ frame_hand_setup = [[sg.Text('Drive 1', size=(28, 2), font="Any 20"), sg.Text('D
                      sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"), key="set_end_posi_1"),
                      sg.Text('End point 2:', size=(11, 2), font="Any 20"),
                      sg.Text(node_2.end_position, size=(7, 2), font="Any 20", key="end_posi_2"),
-                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"), key="set_end_posi_2")],
+                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"),
+                               key="set_end_posi_2")],
 
                     [sg.Text("Distance 1:", size=(11, 2), font="Any 20"),
                      # distance_1
@@ -1169,7 +1186,8 @@ frame_hand_setup = [[sg.Text('Drive 1', size=(28, 2), font="Any 20"), sg.Text('D
                     [sg.Text("Cycle: ", font="Any 20"),
                      sg.Input(hand_cycle, size=(7, 2), font="Any 20", key="hand_cycle"),
                      # hand_cycle_save
-                     sg.Button("save", size=(7, 2), font="Any 20", button_color=("white", "grey"), key="hand_cycle_save")]]
+                     sg.Button("save", size=(7, 2), font="Any 20", button_color=("white", "grey"),
+                               key="hand_cycle_save")]]
 
 frame_hand_move = [[sg.Text("Power: ", size=(14, 2), font="Any 20"),
                     sg.Button("ON", size=(7, 2), font="Any 20", button_color=("white", "green")),
@@ -1185,12 +1203,19 @@ frame_hand_move = [[sg.Text("Power: ", size=(14, 2), font="Any 20"),
 
 frame_hand_info = [[sg.Text("Actual Position:", size=(14, 2), font="Any 15")],
                    [sg.Text("Drive 1: ", size=(7, 2), font="Any 15"),
-                    sg.Text(node_1.getActualPosition() * node_1.posi_factor, size=(7, 2), font="Any 15", key="act_posi_1")],
+                    # act_posi_1
+                    sg.Text(node_1.get_actual_position() * node_1.posi_factor, size=(7, 2), font="Any 15",
+                            key="act_posi_1")],
                    [sg.Text("Drive 2: ", size=(7, 2), font="Any 15"),
-                    sg.Text(node_2.getActualPosition() * node_2.posi_factor, size=(7, 2), font="Any 15", key="act_posi_2")],
+                    # act_posi_2
+                    sg.Text(node_2.get_actual_position() * node_2.posi_factor, size=(7, 2), font="Any 15",
+                            key="act_posi_2")],
                    [sg.Text("Aperture: ", size=(8, 2), font="Any 15"),
-                    sg.Text(str(calcAperture(node_1.distance * node_1.posi_factor)), size=(7, 2), font="Any 15", key="aperture")],
-                   [sg.Button("Update", size=(14, 2), font="Any 15", button_color=("white", "grey"), key="hand_info_update")]]
+                    # aperture ???
+                    sg.Text(str(calcAperture(node_1.distance * node_1.posi_factor)), size=(7, 2), font="Any 15",
+                            key="aperture")],
+                   [sg.Button("Update", size=(14, 2), font="Any 15", button_color=("white", "grey"),
+                              key="hand_info_update")]]
 
 """ **************************************** Hand GUI end **************************************** """
 
@@ -1312,8 +1337,10 @@ while True:
         X_Motor.homing(60, 300)
         Y_Motor.homing(60, 300)
 
-        node_1.switchOff()
-        node_2.switchOff()
+        # node_1.switchOff()
+        # node_2.switchOff()
+        node_1.shut_down()
+        node_2.shut_down()
 
         break
 
@@ -1504,19 +1531,22 @@ while True:
                 break
 
             if event in (None, "dMode_start"):
-                dModeMove(dMode_target_x_list, dMode_target_y_list, dMode_cycle, dMode_velo_x_list, dMode_velo_y_list, cp5_x)
+                dModeMove(dMode_target_x_list, dMode_target_y_list, dMode_cycle, dMode_velo_x_list, dMode_velo_y_list,
+                          cp5_x)
                 updateActPosition()
                 break
 
             """ **************************************** Hand Event start **************************************** """
 
+
             def update_range(node, label):
                 node.distance = round(abs(node.end_position - node.start_position), 2)
                 window[label].update(node.distance * node.posi_factor)
 
+
             # 1133
             if event in (None, "set_start_posi_1"):
-                node_1.start_position = node_1.getActualPosition()
+                node_1.start_position = node_1.get_actual_position()
                 window['start_posi_1'].update(node_1.start_position * node_1.posi_factor)
                 update_range(node_1, "distance_1")
                 # node_1.distance = round(abs(node_1.end_position - node_1.start_position), 2)
@@ -1524,7 +1554,7 @@ while True:
                 break
 
             if event in (None, "set_start_posi_2"):
-                node_2.start_position = node_2.getActualPosition()
+                node_2.start_position = node_2.get_actual_position()
                 window['start_posi_2'].update(node_2.start_position * node_2.posi_factor)
                 update_range(node_2, 'distance_2')
                 # node_2.distance = round(abs(node_2.end_position - node_2.start_position), 2)
@@ -1533,7 +1563,7 @@ while True:
 
             # 1141
             if event in (None, "set_end_posi_1"):
-                node_1.end_position = node_1.getActualPosition()
+                node_1.end_position = node_1.get_actual_position()
                 window['end_posi_1'].update(node_1.end_position * node_1.posi_factor)
                 update_range(node_1, "distance_1")
                 # node_1.distance = round(abs(node_1.end_position - node_1.start_position))
@@ -1541,7 +1571,7 @@ while True:
                 break
 
             if event in (None, "set_end_posi_2"):
-                node_2.end_position = node_2.getActualPosition()
+                node_2.end_position = node_2.get_actual_position()
                 window['end_posi_2'].update(node_2.end_position * node_2.posi_factor)
                 update_range(node_2, "distance_2")
                 # node_2.distance = round(abs(node_2.end_position - node_2.start_position))
@@ -1567,17 +1597,21 @@ while True:
                 break
 
             if event in (None, "ON"):
-                node_1.switchOn()
-                node_2.switchOn()
+                # node_1.switchOn()
+                # node_2.switchOn()
+                node_1.operation_enabled()
+                node_2.operation_enabled()
                 break
 
             if event in (None, "OFF"):
-                node_1.switchOff()
-                node_2.switchOff()
+                # node_1.switchOff()
+                # node_2.switchOff()
+                node_1.shut_down()
+                node_2.shut_down()
                 break
 
             if event in (None, "Homing 1"):
-                node_1.switchOn()
+                node_1.enable_operation()
                 node_1.setHomingMode()
                 node_1.homing()
 
@@ -1586,13 +1620,14 @@ while True:
                 print("Homing finisched " + str(node_1.node.sdo[0x6041].bits[12]))
                 print("Homing Fehler " + str(node_1.node.sdo[0x6041].bits[13]))
 
-                node_1.switchOff()
+                # node_1.switchOff()
+                node_1.shut_down()
 
                 break
 
             if event in (None, "Homing 2"):
 
-                node_2.switchOn()
+                node_2.enable_operation()
 
                 node_2.setHomingMode()
                 node_2.homing()
@@ -1601,14 +1636,17 @@ while True:
                 print("Homing finisched " + str(node_2.node.sdo[0x6041].bits[12]))
                 print("Homing Fehler " + str(node_2.node.sdo[0x6041].bits[13]))
 
-                node_2.switchOff()
+                # node_2.switchOff()
+                node_2.shut_down()
 
                 break
 
             # 1175
             if event in (None, "node_start"):
-                node_1.switchOn()
-                node_2.switchOn()
+                # node_1.switchOn()
+                # node_2.switchOn()
+                node_1.operation_enabled()
+                node_2.operation_enabled()
 
                 # setMoveHand()
                 set_position_mode()
@@ -1616,23 +1654,28 @@ while True:
                 for i in range(0, hand_cycle):
                     moveHand()
 
-                node_1.switchOff()
-                node_2.switchOff()
+                # node_1.switchOff()
+                # node_2.switchOff()
+                node_1.shut_down() # 可省略
+                node_2.shut_down()
 
-                window['act_posi_1'].update(node_1.getActualPosition() * node_1.posi_factor)
-                window['act_posi_2'].update(node_2.getActualPosition() * node_2.posi_factor)
+                window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
+                window['act_posi_2'].update(node_2.get_actual_position() * node_2.posi_factor)
                 window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
 
                 break
 
+            # test
             if event in (None, "node_stop"):
-                node_1.stopMove()
-                node_2.stopMove()
+                node_1.shut_down()
+                node_2.shut_down()
+                # node_1.quick_stop()
+                # node_2.quick_stop()
                 break
 
             if event in (None, 'hand_info_update'):
-                window['act_posi_1'].update(node_1.getActualPosition() * node_1.posi_factor)
-                window['act_posi_2'].update(node_2.getActualPosition() * node_2.posi_factor)
+                window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
+                window['act_posi_2'].update(node_2.get_actual_position() * node_2.posi_factor)
                 window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
                 break
 
