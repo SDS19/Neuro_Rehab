@@ -41,12 +41,16 @@ class Drive:
         # self.velo_factor = self.getVeloFactor()
 
     """ ********** P74 CiA 402 CANopen Device Profile - begin **********
+    
     This device profile has a >>control state machine<< for controlling the behavior of the drive.
     
+    0x6040: Controlword
+    
+    
     Switch On Disabled 
-    - Shutdown => Ready to Switch On 
-    - Switch On => Switched On
-    - Enable Operation => Operation Enabled
+    - Shutdown => Ready to Switch On  (0x0006)
+    - Switch On => Switched On (0x0007)
+    - Enable Operation => Operation Enabled (0x000F)
     - Disable Operation => Switched On
     """
 
@@ -67,22 +71,24 @@ class Drive:
         self.node.sdo[0x6040].raw = 0x0F
 
     def switch_on(self):
-        # self.node.state = 'SWITCHED ON'
         self.node.sdo[0x6040].raw = 0x07
         print("switch on => Ready to Switch On: " + self.node.sdo[0x6041].raw)
 
     def enable_operation(self):
-        # self.node.state = 'OPERATION ENABLED'
         self.node.sdo[0x6040].raw = 0x0F
         print("enable operation => Operation Enabled: " + self.node.sdo[0x6041].raw)
 
-    """ ********** CiA 402 CANopen Device Profile - end ********** """
+    # no use
+    def quick_stop(self):
+        self.node.sdo[0x6040].raw = 0x02
+        print("quick stop => Switch On Disabled: " + self.node.sdo[0x6041].raw)
 
-    # def checkOperationMode(self, mode):
-    #     if mode == 1:
-    #         print("Profile Position Mode")
-    #     if mode == 6:
-    #         print("Homing Mode")
+    # no use
+    def disable_voltage(self):
+        self.node.sdo[0x6040].raw = 0x00
+        print("disable voltage => Switch On Disabled: " + self.node.sdo[0x6041].raw)
+
+    """ ********** CiA 402 CANopen Device Profile - end ********** """
 
     def operation_mode(mode):
         if mode == 1:
@@ -103,7 +109,7 @@ class Drive:
     def homing(self):
         self.node.sdo[0x6040].bits[4] = 1
 
-    """******************** Profile Position Mode - start ********************"""
+    """******************** Profile Position Mode - begin ********************"""
 
     # def setProfPosiMode(self):
     #     self.node.sdo[0x6060].raw = 0x01
@@ -114,6 +120,7 @@ class Drive:
     def set_profile_position_mode(self):
         self.node.sdo['Modes of Operation'].raw = 0x01  # 0x6060: Modes of Operation -> 0x01: Profile Position Mode
         self.operation_mode(str(self.node.sdo['Modes of Operation Display'].raw))  # 0x6061: Modes of Operation Display
+        # 0x6067: Position Window
         self.node.sdo[0x6067].raw = 0x3E8  # ???
 
     # def deactiveLimits(self):
