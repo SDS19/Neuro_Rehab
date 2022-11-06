@@ -1087,8 +1087,8 @@ def set_position_mode():
 def moveHand():
     # node_1.profPosiMode(node_1.end_position)
     # node_2.profPosiMode(node_2.end_position)
-    node_1.set_target_position(node_1.end_position)
-    node_2.set_target_position(node_2.end_position)
+    node_1.move_to_target_position(node_1.end_position)
+    node_2.move_to_target_position(node_2.end_position)
 
     while node_1.get_actual_velocity() != 0 or node_2.get_actual_velocity() != 0:
         time.sleep(0.1)
@@ -1108,9 +1108,10 @@ def moveHand():
 
     # node_1.profPosiMode(node_1.start_position)
     # node_2.profPosiMode(node_2.start_position)
-    node_1.set_target_position(node_1.start_position)
-    node_2.set_target_position(node_2.start_position)
+    node_1.move_to_target_position(node_1.start_position)
+    node_2.move_to_target_position(node_2.start_position)
 
+    # wait node move to target position
     while node_1.getActualVelocity() != 0 or node_2.getActualVelocity() != 0:
         time.sleep(0.1)
 
@@ -1122,20 +1123,27 @@ def moveHand():
 
     # node_1.switchOn()
     # node_2.switchOn()
-    node_1.operation_enabled()
+    node_1.operation_enabled()  # 可省略
     node_2.operation_enabled()
 
 
 def move():
-    set_target_position(node_1)
-    set_target_position(node_2)
+    node_1.move_to_target_position(node_1.start_position)
+    node_2.move_to_target_position(node_2.start_position)
+
+    # wait node reach target position
+    while node_1.sdo[0x6041].bits[10] == 1 and node_2.sdo[0x6041].bits[10] == 1:
+        time.sleep(0.1)
+
     node_1.operation_enabled()
     node_2.operation_enabled()
 
+    node_1.move_to_target_position(node_1.end_position)
+    node_2.move_to_target_position(node_2.end_position)
 
-def set_target_position(node):
-    node.set_target_position(node.end_position)
-    node.set_target_position(node.start_position)
+    # wait node reach target position
+    while node_1.sdo[0x6041].bits[10] == 1 and node_2.sdo[0x6041].bits[10] == 1:
+        time.sleep(0.1)
 
 
 def calcAperture(stroke):
