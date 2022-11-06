@@ -77,11 +77,12 @@ class Drive:
         self.node.sdo[0x6040].raw = 0x0F
         print("enable operation => Operation Enabled: " + self.node.sdo[0x6041].raw)
 
-    # no use
+    # test
     def quick_stop(self):
         self.node.sdo[0x6040].raw = 0x02
         print("quick stop => Switch On Disabled: " + self.node.sdo[0x6041].raw)
 
+    # test
     def halt(self):
         self.node.sdo[0x6040].bits[8] = 1  # stop drive
 
@@ -124,7 +125,7 @@ class Drive:
     # 0x6067: Position Window ???
     def set_profile_position_mode(self):
         self.node.sdo['Modes of Operation'].raw = 0x01
-        self.operation_mode(str(self.node.sdo['Modes of Operation Display'].raw))
+        self.operation_mode(self.node.sdo['Modes of Operation Display'].raw)
         self.node.sdo[0x6067].raw = 0x3E8  # ???
 
     # def deactiveLimits(self):
@@ -143,10 +144,10 @@ class Drive:
 
     # 0x607A: Target Position
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
-    def set_target_position(self, target_position):
+    def move_to_target_position(self, target_position):
         self.node.sdo['Target Position'].raw = target_position
         self.node.sdo[0x6040].bits[4] = 1  # set neu target position
-        print(self.node.sdo[0x6041].bits[12].raw)
+        print(self.node.sdo[0x6041].bits[12].raw)  # 可省略
         # print(self.node.sdo[0x6041].bits[10].raw)
 
     # P80 => Position Factor
