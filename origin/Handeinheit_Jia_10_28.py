@@ -40,6 +40,7 @@ class Drive:
         # self.velo_factor = self.getVeloFactor()
 
     # switch on/off
+
     """ ********** start 2022.11.1 ********** """
 
     def switchOn(self):
@@ -95,6 +96,8 @@ class Drive:
     def homing(self):
         self.node.sdo[0x6040].bits[4] = 1
 
+    """******************** Profile Position Mode - start ********************"""
+
     # def setProfPosiMode(self):
     #     self.node.sdo[0x6060].raw = 0x01
     #     mode = self.node.sdo[0x6061].raw
@@ -103,23 +106,41 @@ class Drive:
 
     def set_profile_position_mode(self):
         self.node.sdo['Modes of Operation'].raw = 0x01  # 0x6060: Modes of Operation -> 0x01: Profile Position Mode
-        self.operation_mode(self.node.sdo['Modes of Operation Display'].raw)  # 0x6061: Modes of Operation Display
+        self.operation_mode(str(self.node.sdo['Modes of Operation Display'].raw))  # 0x6061: Modes of Operation Display
         self.node.sdo[0x6067].raw = 0x3E8  # ???
 
-    def setNegDirection(self):
-        self.node.sdo[0x607E].bits[7] = 1
+    # def deactiveLimits(self):
+    #     # self.node.sdo['Activate Position Limits in Position Mode'].raw = 0
+    #     self.node.sdo[0x2338][3].raw = 0
+
+    # 0x2338: General Settings -> 3: Active Position Limits in Position Mode
+    def position_limits_off(self):
+        self.node.sdo[0x2338][3].raw = 0
+        print(self.node.sdo[0x2338][3].raw)
 
     def profPosiMode(self, target):
         print("Target: " + str(target))
         self.node.sdo[0x607A].raw = target
-        self.node.sdo[0x6040].raw = 0x3F
+        self.node.sdo[0x6040].raw = 0x3F  # ???
+
+    # 0x607A: Target Position
+    def set_target_position(self, target_position):
+        self.node.sdo['Target Position'].raw = target_position
+        # 0x6040: Controlword -> 4: New set-point/Homing operation start
+        self.node.sdo[0x6040].bits[4] = 1
+        print(self.node.sdo[0x6041].bits[12].raw)
+
+    """******************** Profile Position Mode - end ********************"""
+
+    def setNegDirection(self):
+        self.node.sdo[0x607E].bits[7] = 1
 
     def setCycPosiMode(self):
         self.node.sdo[0x6060].raw = 0x08
         mode = self.node.sdo[0x6061].raw
         print(mode)
 
-    '''******************** set value ********************'''
+    """******************** set value ********************"""
 
     # def setTargetVelo(self, target_velo):
     #     self.node.sdo[0x6081].raw = target_velo
@@ -131,25 +152,7 @@ class Drive:
     # 0x6083: Profile Acceleration
     # 0x6084: Profile Deceleration
 
-    '''******************** set value ********************'''
-
-    # def deactiveLimits(self):
-    #     # self.node.sdo['Activate Position Limits in Position Mode'].raw = 0
-    #     self.node.sdo[0x2338][3].raw = 0
-
-    # 0x2338: General Settings -> 3: Active Position Limits in Position Mode
-    def position_limits_off(self):
-        self.node.sdo[0x2338][3].raw = 0
-        print(self.node.sdo[0x2338][3].raw)
-
-    def getPosiFactor(self):
-        # ??? 0x6093: Position Factor
-        numerator = int.from_bytes(self.node.sdo.upload(0x6093, 1)[0:2], byteorder='little')
-        divisior = int.from_bytes(self.node.sdo.upload(0x6093, 2)[0:2], byteorder='little')
-
-        posi_factor = numerator / divisior
-        posi_factor = posi_factor / 100  # m -> mm ???
-        return posi_factor
+    """******************** set value ********************"""
 
     def getVeloFactor(self):
         numerator = int.from_bytes(self.node.sdo.upload(0x6096, 1)[0:2], byteorder='little')
@@ -162,8 +165,29 @@ class Drive:
     def getActualVelocity(self):
         return self.node.sdo['Velocity Actual Value'].raw
 
+    # 0x606C: Velocity Actual Value
+    def get_actual_velocity(self):
+        return self.node.sdo['Velocity Actual Value'].raw
+
     def getActualPosition(self):
         return self.node.sdo['Position Actual Value'].raw
+
+    # P80 => Position Factor
+    # 0x6063: Position Actual Internal Value (in internen Einheiten)
+    # 0x6064: Position Actual Value (in benutzerdefinierten Einheiten)
+    def get_actual_position(self):
+        print("Position Actual Internal Value: " + str(self.node.sdo[0x6063].raw) + "\n")
+        print("Position Actual Value: " + str(self.node.sdo[0x6064].raw))
+        return self.node.sdo[0x6064].raw
+
+    def getPosiFactor(self):
+        # ??? 0x6093: Position Factor
+        numerator = int.from_bytes(self.node.sdo.upload(0x6093, 1)[0:2], byteorder='little')
+        divisior = int.from_bytes(self.node.sdo.upload(0x6093, 2)[0:2], byteorder='little')
+
+        posi_factor = numerator / divisior
+        posi_factor = posi_factor / 100  # m -> mm ???
+        return posi_factor
 
     def getActualCurrent(self):
         return self.node.sdo['Current Actual Value'].raw
