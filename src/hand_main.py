@@ -185,26 +185,20 @@ while True:
         node_2.shut_down()
         break
 
-
     def update_range(node, label):
         node.distance = round(abs(node.end_position - node.start_position), 2)
         window[label].update(node.distance * node.posi_factor)
 
-
-    # 1133
     if event in (None, "set_start_posi_1"):
         node_1.start_position = node_1.get_actual_position()
         window['start_posi_1'].update(node_1.start_position * node_1.posi_factor)
         update_range(node_1, "distance_1")
         break
-
     if event in (None, "set_start_posi_2"):
         node_2.start_position = node_2.get_actual_position()
         window['start_posi_2'].update(node_2.start_position * node_2.posi_factor)
         update_range(node_2, 'distance_2')
         break
-
-    # 1141
     if event in (None, "set_end_posi_1"):
         node_1.end_position = node_1.get_actual_position()
         window['end_posi_1'].update(node_1.end_position * node_1.posi_factor)
@@ -216,7 +210,7 @@ while True:
         update_range(node_2, "distance_2")
         break
 
-    # 1163
+    # test
     if event in (None, "hand_cycle_save"):
         hand_cycle = int(values['hand_cycle'])
         # window['hand_cycle'].update(hand_cycle)  # 多余
@@ -232,7 +226,7 @@ while True:
         window['velo_2'].update(target_velo_2)  # 多余
         break
 
-    # check
+    # commit
     if event in (None, "ON"):
         node_1.operation_enabled()
         node_2.operation_enabled()
@@ -284,7 +278,7 @@ while True:
             move(node_1.start_position, node_2.start_position)
             move(node_1.end_position, node_2.end_position)
 
-        node_1.shut_down()  # 可省略
+        node_1.shut_down()
         node_2.shut_down()
 
         window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
