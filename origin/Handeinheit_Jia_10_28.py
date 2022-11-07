@@ -1,24 +1,12 @@
-'''
-import tkinter as tk
-from typing import Text
-from typing_extensions import IntVar                                                                                       
-from PIL import Image
-import csv
-from datetime import datetime
-import threading
-import sys
-'''
-import os
-import PySimpleGUI as sg
-import canopen
 from canopen.profiles.p402 import BaseNode402
-import time
 
 
 class Drive:
-    def __init__(self, network, adress):
+    cycle = 1
 
-        self.node = BaseNode402(adress, '/home/pi/Test/mclm.eds')
+    def __init__(self, node_id, network):
+
+        self.node = BaseNode402(node_id, '/home/pi/Test/mclm.eds')
         network.add_node(self.node)
 
         self.node.nmt.state = 'OPERATIONAL'
@@ -26,11 +14,9 @@ class Drive:
 
         # self.node.setup_402_state_machine()
 
-        # self.node.sdo[0x6040].raw = 0x06
-
         self.start_position = 0
         self.end_position = 0
-
+        self.range = 0
         self.distance = 0
 
         self.velocity = 0x14
@@ -53,27 +39,27 @@ class Drive:
     - Disable Operation => Switched On
     """
 
-    def operation_enabled(self):  # power on
+    def operation_enabled(self):
         self.shut_down()
         self.switch_on()
         self.enable_operation()
 
-    def shut_down(self):  # power off
+    def shut_down(self):
         self.node.sdo[0x6040].raw = 0x06
-        print("shut down => Ready to Switch On: " + str(self.node.sdo[0x6041].raw))
+        # print("shut down => Ready to Switch On: " + str(self.node.sdo[0x6041].raw))
 
     def switch_on(self):
         self.node.sdo[0x6040].raw = 0x07
-        print("switch on => Switched On: " + str(self.node.sdo[0x6041].raw))
+        # print("switch on => Switched On: " + str(self.node.sdo[0x6041].raw))
 
     def enable_operation(self):
         self.node.sdo[0x6040].raw = 0x0F
-        print("enable operation => Operation Enabled: " + str(self.node.sdo[0x6041].raw))
+        # print("enable operation => Operation Enabled: " + str(self.node.sdo[0x6041].raw))
 
     # test
     def quick_stop(self):
         self.node.sdo[0x6040].raw = 0x02
-        print("quick stop => Switch On Disabled: " + str(self.node.sdo[0x6041].raw))
+        # print("quick stop => Switch On Disabled: " + str(self.node.sdo[0x6041].raw))
 
     # test
     def halt(self):
@@ -82,7 +68,7 @@ class Drive:
     # no use
     def disable_voltage(self):
         self.node.sdo[0x6040].raw = 0x00
-        print("disable voltage => Switch On Disabled: " + str(self.node.sdo[0x6041].raw))
+        # print("disable voltage => Switch On Disabled: " + str(self.node.sdo[0x6041].raw))
 
     """ ******************** Step 2: P127 Modes of Operation ******************** """
 
@@ -112,8 +98,7 @@ class Drive:
     # 0x6067: Position Window ???
     def set_profile_position_mode(self):
         self.node.sdo[0x6060].raw = 0x01
-        mode = self.node.sdo[0x6061].raw
-        self.operation_mode(mode)
+        # self.operation_mode(self.node.sdo[0x6061].raw)
         self.node.sdo[0x6067].raw = 0x3E8  # ???
 
     # 0x2338: General Settings -> 3: Active Position Limits in Position Mode
@@ -124,19 +109,18 @@ class Drive:
     # 0x607A: Target Position
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
     def move_to_target_position(self, target_position):
-        self.node.sdo['Target Position'].raw = target_position
+        self.node.sdo[0x607A].raw = target_position
         self.node.sdo[0x6040].bits[4] = 1  # set neu target position
-        # print(self.node.sdo[0x6041].bits[10].raw)
 
     # P80 => Position Factor
     # 0x6063: Position Actual Internal Value (in internen Einheiten)
     # 0x6064: Position Actual Value (in benutzerdefinierten Einheiten)
     def get_actual_position(self):
-        print("Position Actual Internal Value: " + str(self.node.sdo[0x6063].raw) + "\n")
+        # print("Position Actual Internal Value: " + str(self.node.sdo[0x6063].raw) + "\n")
         print("Position Actual Value: " + str(self.node.sdo[0x6064].raw))
         return self.node.sdo['Position Actual Value'].raw
 
-        # 0x6093: Position Factor
+    # 0x6093: Position Factor
     def getPosiFactor(self):
         numerator = int.from_bytes(self.node.sdo.upload(0x6093, 1)[0:2], byteorder='little')
         divisior = int.from_bytes(self.node.sdo.upload(0x6093, 2)[0:2], byteorder='little')
@@ -146,6 +130,15 @@ class Drive:
 
     """ ********** Profile Velocity Mode ********** """
 
+    # 0x6081: Profile Velocity
+    def set_target_velocity(self, target_velocity):
+        self.node.sdo['Profile Velocity'].raw = target_velocity
+
+    # 0x606C: Velocity Actual Value
+    def get_actual_velocity(self):
+        print("Velocity Actual Value: " + str(self.node.sdo[0x606C].raw))
+        return self.node.sdo['Velocity Actual Value'].raw
+
     def setNegDirection(self):
         self.node.sdo[0x607E].bits[7] = 1
 
@@ -153,35 +146,3 @@ class Drive:
         self.node.sdo[0x6060].raw = 0x08
         mode = self.node.sdo[0x6061].raw
         print(mode)
-
-    """******************** set value ********************"""
-
-    # def setTargetVelo(self, target_velo):
-    #     self.node.sdo[0x6081].raw = target_velo
-
-    # 0x6081: Profile Velocity
-    def set_target_velocity(self, target_velocity):
-        self.node.sdo['Profile Velocity'].raw = target_velocity
-
-    # 0x6083: Profile Acceleration
-    # 0x6084: Profile Deceleration
-
-    """******************** set value ********************"""
-
-    # def getVeloFactor(self):
-    #     numerator = int.from_bytes(self.node.sdo.upload(0x6096, 1)[0:2], byteorder='little')
-    #     divisior = int.from_bytes(self.node.sdo.upload(0x6096, 2)[0:2], byteorder='little')
-    #     velo_factor = numerator / divisior
-    #     velo_factor = velo_factor
-    #     print(velo_factor)
-    #     return velo_factor
-
-    def getActualVelocity(self):
-        return self.node.sdo['Velocity Actual Value'].raw
-
-    # 0x606C: Velocity Actual Value
-    def get_actual_velocity(self):
-        return self.node.sdo['Velocity Actual Value'].raw
-
-    def getActualCurrent(self):
-        return self.node.sdo['Current Actual Value'].raw

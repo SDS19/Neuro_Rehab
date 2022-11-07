@@ -38,6 +38,13 @@ def print_real_time_data():
         time.sleep(0.01)
 
 
+def print_actual_velocity():
+    while True:
+        node_1.get_actual_velocity()
+        node_2.get_actual_velocity()
+        time.sleep(0.01)
+
+
 # forward() + backward()
 def move(target_1, target_2):
     node_1.operation_enabled()
@@ -88,6 +95,7 @@ def moveHand():
 
     node_1.operation_enabled()  # 可省略
     node_2.operation_enabled()
+
 
 # def calcAperture(stroke):
 #    if stroke <= 50:
@@ -185,9 +193,11 @@ while True:
         node_2.shut_down()
         break
 
+
     def update_range(node, label):
         node.distance = round(abs(node.end_position - node.start_position), 2)
         window[label].update(node.distance * node.posi_factor)
+
 
     if event in (None, "set_start_posi_1"):
         node_1.start_position = node_1.get_actual_position()
@@ -226,10 +236,11 @@ while True:
         window['velo_2'].update(target_velo_2)  # 多余
         break
 
-    # commit
+    # commit => test
     if event in (None, "ON"):
         node_1.operation_enabled()
         node_2.operation_enabled()
+        print_actual_velocity()
         break
     if event in (None, "OFF"):
         node_1.shut_down()
