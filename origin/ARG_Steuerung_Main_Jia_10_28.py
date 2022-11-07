@@ -1079,14 +1079,12 @@ target_velo_2 = 0x14
 def set_position_mode():
     node_1.set_profile_position_mode()
     node_2.set_profile_position_mode()
-    node_2.setNegDirection()  # ???
+    node_2.setNegDirection()  # 2号电机方向相反
     node_1.position_limits_off()
     node_2.position_limits_off()
 
 
 def moveHand():
-    # node_1.profPosiMode(node_1.end_position)
-    # node_2.profPosiMode(node_2.end_position)
     node_1.move_to_target_position(node_1.end_position)
     node_2.move_to_target_position(node_2.end_position)
 
@@ -1132,7 +1130,7 @@ def move():
     node_2.move_to_target_position(node_2.start_position)
 
     # wait node reach target position
-    while node_1.sdo[0x6041].bits[10] == 1 and node_2.sdo[0x6041].bits[10] == 1:
+    while node_1.node.sdo[0x6041].bits[10] == 1 and node_2.node.sdo[0x6041].bits[10] == 1:
         time.sleep(0.1)
 
     node_1.operation_enabled()
@@ -1605,15 +1603,11 @@ while True:
                 break
 
             if event in (None, "ON"):
-                # node_1.switchOn()
-                # node_2.switchOn()
                 node_1.operation_enabled()
                 node_2.operation_enabled()
                 break
 
             if event in (None, "OFF"):
-                # node_1.switchOff()
-                # node_2.switchOff()
                 node_1.shut_down()
                 node_2.shut_down()
                 break
@@ -1651,19 +1645,14 @@ while True:
 
             # 1175
             if event in (None, "node_start"):
-                # node_1.switchOn()
-                # node_2.switchOn()
                 node_1.operation_enabled()
                 node_2.operation_enabled()
 
-                # setMoveHand()
                 set_position_mode()
 
                 for i in range(0, hand_cycle):
                     moveHand()
 
-                # node_1.switchOff()
-                # node_2.switchOff()
                 node_1.shut_down()  # 可省略
                 node_2.shut_down()
 

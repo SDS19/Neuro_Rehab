@@ -53,34 +53,27 @@ class Drive:
     - Disable Operation => Switched On
     """
 
-    def operation_enabled(self):
+    def operation_enabled(self):  # power on
         self.shut_down()
         self.switch_on()
         self.enable_operation()
 
-    # def switchOff(self):
-    #     self.node.sdo[0x6040].raw = 0x06
-
-    def shut_down(self):
+    def shut_down(self):  # power off
         self.node.sdo[0x6040].raw = 0x06
-        print("shut down => Ready to Switch On: " + self.node.sdo[0x6041].raw)
-
-    # def switchOn(self):
-    #     self.node.sdo[0x6040].raw = 0x07
-    #     self.node.sdo[0x6040].raw = 0x0F
+        print("shut down => Ready to Switch On: " + str(self.node.sdo[0x6041].raw))
 
     def switch_on(self):
         self.node.sdo[0x6040].raw = 0x07
-        print("switch on => Ready to Switch On: " + self.node.sdo[0x6041].raw)
+        print("switch on => Switched On: " + str(self.node.sdo[0x6041].raw))
 
     def enable_operation(self):
         self.node.sdo[0x6040].raw = 0x0F
-        print("enable operation => Operation Enabled: " + self.node.sdo[0x6041].raw)
+        print("enable operation => Operation Enabled: " + str(self.node.sdo[0x6041].raw))
 
     # test
     def quick_stop(self):
         self.node.sdo[0x6040].raw = 0x02
-        print("quick stop => Switch On Disabled: " + self.node.sdo[0x6041].raw)
+        print("quick stop => Switch On Disabled: " + str(self.node.sdo[0x6041].raw))
 
     # test
     def halt(self):
@@ -89,7 +82,7 @@ class Drive:
     # no use
     def disable_voltage(self):
         self.node.sdo[0x6040].raw = 0x00
-        print("disable voltage => Switch On Disabled: " + self.node.sdo[0x6041].raw)
+        print("disable voltage => Switch On Disabled: " + str(self.node.sdo[0x6041].raw))
 
     """ ******************** Step 2: P127 Modes of Operation ******************** """
 
@@ -114,40 +107,25 @@ class Drive:
 
     """ ********** Profile Position Mode ********** """
 
-    # def setProfPosiMode(self):
-    #     self.node.sdo[0x6060].raw = 0x01
-    #     mode = self.node.sdo[0x6061].raw
-    #     self.operation_mode(mode)
-    #     self.node.sdo[0x6067].raw = 0x3E8
-
     # 0x6060: Modes of Operation -> 0x01: Profile Position Mode
     # 0x6061: Modes of Operation Display
     # 0x6067: Position Window ???
     def set_profile_position_mode(self):
-        self.node.sdo['Modes of Operation'].raw = 0x01
-        self.operation_mode(self.node.sdo['Modes of Operation Display'].raw)
+        self.node.sdo[0x6060].raw = 0x01
+        mode = self.node.sdo[0x6061].raw
+        self.operation_mode(mode)
         self.node.sdo[0x6067].raw = 0x3E8  # ???
-
-    # def deactiveLimits(self):
-    #     # self.node.sdo['Activate Position Limits in Position Mode'].raw = 0
-    #     self.node.sdo[0x2338][3].raw = 0
 
     # 0x2338: General Settings -> 3: Active Position Limits in Position Mode
     def position_limits_off(self):
         self.node.sdo[0x2338][3].raw = 0
         print(self.node.sdo[0x2338][3].raw)
 
-    # def profPosiMode(self, target):
-    #     print("Target: " + str(target))
-    #     self.node.sdo[0x607A].raw = target
-    #     self.node.sdo[0x6040].raw = 0x3F  # ???
-
     # 0x607A: Target Position
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
     def move_to_target_position(self, target_position):
         self.node.sdo['Target Position'].raw = target_position
         self.node.sdo[0x6040].bits[4] = 1  # set neu target position
-        print(self.node.sdo[0x6041].bits[12].raw)  # 可省略
         # print(self.node.sdo[0x6041].bits[10].raw)
 
     # P80 => Position Factor
