@@ -7,12 +7,10 @@ class Drive:
     def __init__(self, node_id, network):
 
         self.node = BaseNode402(node_id, '/home/pi/Test/mclm.eds')
+
         network.add_node(self.node)
 
         self.node.nmt.state = 'OPERATIONAL'
-        print('NMT state: ' + self.node.nmt.state)
-
-        # self.node.setup_402_state_machine()
 
         self.start_position = 0
         self.end_position = 0
@@ -65,31 +63,38 @@ class Drive:
     def halt(self):
         self.node.sdo[0x6040].bits[8] = 1  # stop drive
 
-    # no use
+    # test
     def disable_voltage(self):
         self.node.sdo[0x6040].raw = 0x00
         # print("disable voltage => Switch On Disabled: " + str(self.node.sdo[0x6041].raw))
 
-    """ ******************** Step 2: P127 Modes of Operation ******************** """
+    """ ******************** Step 2: P127 Modes of Operation ******************** 
+    
+    Profile Position Mode: 1
+    Profile Velocity Mode: 3
+    Homing Mode:           6
 
-    def operation_mode(mode):
-        if mode == 1:
-            print('Profile Position Mode')
-        elif mode == 3:
-            print('Profile Velocity Mode')
-        elif mode == 6:
-            print('Homing Mode')
-        elif mode == -1:
-            print('FAULHABER Mode')
+        ********** P87 Homing Mode ********** """
 
     def setHomingMode(self):
         self.node.sdo[0x6060].raw = 0x06
-        mode = self.node.sdo[0x6061].raw
-        self.operation_mode(mode)
         self.node.sdo[0x6098].raw = 0x23
-
+    def set_homing_mode(self):
+        self.node.sdo[0x6060].raw = 0x06
     def homing(self):
         self.node.sdo[0x6040].bits[4] = 1
+
+    # test 完全封装
+    # 0x6060: Modes of Operation -> 0x06: Homing Mode
+    # 0x6098: Homing Method -> 35: Homing at actual position
+    # 0x6040: Controlword -> 4: New set-point/Homing operation start
+    def homing_to_actual_position(self):
+        self.operation_enabled()  # power on
+        self.node.sdo[0x6060].raw = 0x06
+        self.node.sdo[0x6098].raw = 0x23  # 0x23 = 35
+        self.node.sdo[0x6040].bits[4] = 1  # start to move
+        self.get_actual_position()
+        self.shut_down()  # power off
 
     """ ********** Profile Position Mode ********** """
 
@@ -98,19 +103,19 @@ class Drive:
     # 0x6067: Position Window ???
     def set_profile_position_mode(self):
         self.node.sdo[0x6060].raw = 0x01
-        # self.operation_mode(self.node.sdo[0x6061].raw)
-        self.node.sdo[0x6067].raw = 0x3E8  # ???
+        # self.node.sdo[0x6067].raw = 0x3E8  # ???
 
     # 0x2338: General Settings -> 3: Active Position Limits in Position Mode
     def position_limits_off(self):
         self.node.sdo[0x2338][3].raw = 0
         print(self.node.sdo[0x2338][3].raw)
 
+    # 完全封装set_profile_position_mode + position_limits_off
     # 0x607A: Target Position
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
     def move_to_target_position(self, target_position):
         self.node.sdo[0x607A].raw = target_position
-        self.node.sdo[0x6040].bits[4] = 1  # set neu target position
+        self.node.sdo[0x6040].bits[4] = 1  # start to move
 
     # P80 => Position Factor
     # 0x6063: Position Actual Internal Value (in internen Einheiten)
@@ -139,10 +144,22 @@ class Drive:
         print("Velocity Actual Value: " + str(self.node.sdo[0x606C].raw))
         return self.node.sdo['Velocity Actual Value'].raw
 
-    def setNegDirection(self):
+    """ ******************** Test Method ******************** """
+
+    # 进一步封装Mode方法，实现一个方法调用即可完成模式选择和目标值设置，把state machine方法也封装进去
+
+    # 0x607E: Polarity (P129)
+    # Bit 7 = 1 negative Bewegungsrichtung im Positionierbetrieb
+    # Bit 6 = 1 negative Bewegungsrichtung im Geschwindigkeitsbetrieb
+    def set_negative_move_direction(self):
         self.node.sdo[0x607E].bits[7] = 1
 
-    def setCycPosiMode(self):
-        self.node.sdo[0x6060].raw = 0x08
-        mode = self.node.sdo[0x6061].raw
-        print(mode)
+    # 0x2310: Digital Input Settings
+    # Bit 5: Switch Polarity
+    def test(self):
+        print(self.node.sdo[0x2310].bits[5])
+
+    # def setCycPosiMode(self):
+    #     self.node.sdo[0x6060].raw = 0x08
+    #     mode = self.node.sdo[0x6061].raw
+    #     print(mode)
