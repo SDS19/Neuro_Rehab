@@ -3,7 +3,9 @@ import time
 
 import canopen
 import PySimpleGUI as sg
+from GUI.widget.GUIWidget import *
 import origin.Handeinheit_Jia_10_28 as hand
+
 
 os.system("sudo ifconfig can0 down")
 os.system("sudo /sbin/ip link set can0 up type can bitrate 125000")
@@ -15,6 +17,16 @@ network.connect(channel='can0', bustype='socketcan', bitrate=125000)
 node_1 = hand.Drive(127, network)
 node_2 = hand.Drive(126, network)
 
+""" **************************************** PyQt5 GUI **************************************** """
+
+app = QApplication(sys.argv)
+
+window = HandWidget()
+
+window.show()
+
+""" **************************************** PyQt5 GUI **************************************** """
+
 hand_cycle = 1  # cycle time
 # node_1.cycle = 1 (default)
 
@@ -24,9 +36,9 @@ target_velo_2 = 0x14
 
 
 def set_position_mode():
-    node_1.set_profile_position_mode()
-    node_2.set_profile_position_mode()
-    node_2.setNegDirection()  #
+    # node_1.set_profile_position_mode()
+    # node_2.set_profile_position_mode()
+    node_2.set_negative_move_direction()
     node_1.position_limits_off()
     node_2.position_limits_off()
 
@@ -38,22 +50,22 @@ def print_real_time_data():
         time.sleep(0.01)
 
 
-def print_actual_velocity():
+def print_data():
     while True:
         node_1.get_actual_velocity()
-        node_2.get_actual_velocity()
+        node_1.get_actual_position()
         time.sleep(0.01)
 
 
 # forward() + backward()
 def move(target_1, target_2):
-    node_1.operation_enabled()
-    node_2.operation_enabled()
+    # node_1.operation_enabled()
+    # node_2.operation_enabled()
 
     node_1.move_to_target_position(target_1)
     node_2.move_to_target_position(target_2)
 
-    print_real_time_data()
+    print_real_time_data()  # wait and print
 
     # 0x6041: Statusword -> 10: Target Reached
     if node_1.node.sdo[0x6041].bits[10] == 1:
@@ -228,19 +240,19 @@ while True:
     if event in (None, "velo_save_1"):
         target_velo_1 = int(values['velo_1'])
         node_1.set_target_velocity(target_velo_1)
-        window['velo_1'].update(target_velo_1)  # 多余
+        # window['velo_1'].update(target_velo_1)  # 多余
         break
     if event in (None, "velo_save_2"):
         target_velo_2 = int(values['velo_2'])
         node_2.set_target_velocity(target_velo_2)
-        window['velo_2'].update(target_velo_2)  # 多余
+        # window['velo_2'].update(target_velo_2)  # 多余
         break
 
     # commit => test
     if event in (None, "ON"):
         node_1.operation_enabled()
         node_2.operation_enabled()
-        print_actual_velocity()
+        print_data()
         break
     if event in (None, "OFF"):
         node_1.shut_down()
@@ -248,16 +260,16 @@ while True:
         break
 
     if event in (None, "Homing 1"):
-        node_1.enable_operation()
-        node_1.setHomingMode()
-
-        node_1.homing()
+        # node_1.enable_operation()
+        # node_1.setHomingMode()
+        # node_1.homing()
+        node_1.homing_to_actual_position()
 
         while node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0:
             time.sleep(0.2)
 
-        print("Homing finisched " + str(node_1.node.sdo[0x6041].bits[12]))
-        print("Homing Fehler " + str(node_1.node.sdo[0x6041].bits[13]))
+        print("Homing Attained " + str(node_1.node.sdo[0x6041].bits[12]))
+        print("Homing Error " + str(node_1.node.sdo[0x6041].bits[13]))
 
         node_1.shut_down()
         break
@@ -265,7 +277,6 @@ while True:
     if event in (None, "Homing 2"):
         node_2.enable_operation()
         node_2.setHomingMode()
-
         node_2.homing()
 
         while node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0:
@@ -276,7 +287,8 @@ while True:
 
         node_2.shut_down()
         break
-    # 1175
+
+    # test
     if event in (None, "node_start"):
         # node_1.operation_enabled()
         # node_2.operation_enabled()
@@ -289,8 +301,8 @@ while True:
             move(node_1.start_position, node_2.start_position)
             move(node_1.end_position, node_2.end_position)
 
-        node_1.shut_down()
-        node_2.shut_down()
+        # node_1.shut_down()
+        # node_2.shut_down()
 
         window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
         window['act_posi_2'].update(node_2.get_actual_position() * node_2.posi_factor)
@@ -311,4 +323,6 @@ while True:
         # window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
         break
 
-window.close()
+window.close()  #
+
+sys.exit(app.exec_())  # PyQt5 end line
