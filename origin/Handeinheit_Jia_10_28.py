@@ -1,3 +1,5 @@
+import time
+
 from canopen.profiles.p402 import BaseNode402
 
 
@@ -114,8 +116,14 @@ class Drive:
     # 0x607A: Target Position
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
     def move_to_target_position(self, target_position):
+        self.operation_enabled()  # power on
+        self.node.sdo[0x6060].raw = 0x01
         self.node.sdo[0x607A].raw = target_position
         self.node.sdo[0x6040].bits[4] = 1  # start to move
+        time.sleep(0.1)
+        if self.node.sdo[0x6041].bits[12] == 1:
+            print("Set-point Acknowledge: " + self.node.sdo[0x6041].bits[12])
+        self.shut_down()  # power off
 
     # P80 => Position Factor
     # 0x6063: Position Actual Internal Value (in internen Einheiten)
@@ -154,6 +162,7 @@ class Drive:
     def set_negative_move_direction(self):
         self.node.sdo[0x607E].bits[7] = 1
 
+    # test
     # 0x2310: Digital Input Settings
     # Bit 5: Switch Polarity
     def test(self):
