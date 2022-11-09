@@ -6,7 +6,6 @@ import PySimpleGUI as sg
 from GUI.widget.GUIWidget import *
 import origin.Handeinheit_Jia_10_28 as hand
 
-
 os.system("sudo ifconfig can0 down")
 os.system("sudo /sbin/ip link set can0 up type can bitrate 125000")
 os.system("sudo ifconfig can0 up")
@@ -19,11 +18,11 @@ node_2 = hand.Drive(126, network)
 
 """ **************************************** PyQt5 GUI **************************************** """
 
-app = QApplication(sys.argv)
+# app = QApplication(sys.argv)
 
-window = HandWidget()
+# window = HandWidget()
 
-window.show()
+# window.show()
 
 """ **************************************** PyQt5 GUI **************************************** """
 
@@ -31,7 +30,7 @@ hand_cycle = 1  # cycle time
 # node_1.cycle = 1 (default)
 
 # target velocity: node_1.velocity = 0x14 (default)
-target_velo_1 = 0x14  # 0x14 -> Error Output P137 ???
+target_velo_1 = 0x14  # 0x14 = 20
 target_velo_2 = 0x14
 
 
@@ -39,8 +38,8 @@ def set_position_mode():
     # node_1.set_profile_position_mode()
     # node_2.set_profile_position_mode()
     node_2.set_negative_move_direction()
-    node_1.position_limits_off()
-    node_2.position_limits_off()
+    # node_1.position_limits_off()
+    # node_2.position_limits_off()
 
 
 def print_real_time_data():
@@ -200,129 +199,132 @@ while True:
 
     event, values = window.read()
 
-    if event in (None, 'Quit'):
-        node_1.shut_down()
-        node_2.shut_down()
-        break
+    while True:
+
+        if event in (None, 'Quit'):
+            node_1.shut_down()
+            node_2.shut_down()
+            break
 
 
-    def update_range(node, label):
-        node.distance = round(abs(node.end_position - node.start_position), 2)
-        window[label].update(node.distance * node.posi_factor)
+        def update_range(node, label):
+            node.distance = round(abs(node.end_position - node.start_position), 2)
+            window[label].update(node.distance * node.posi_factor)
 
 
-    if event in (None, "set_start_posi_1"):
-        node_1.start_position = node_1.get_actual_position()
-        window['start_posi_1'].update(node_1.start_position * node_1.posi_factor)
-        update_range(node_1, "distance_1")
-        break
-    if event in (None, "set_start_posi_2"):
-        node_2.start_position = node_2.get_actual_position()
-        window['start_posi_2'].update(node_2.start_position * node_2.posi_factor)
-        update_range(node_2, 'distance_2')
-        break
-    if event in (None, "set_end_posi_1"):
-        node_1.end_position = node_1.get_actual_position()
-        window['end_posi_1'].update(node_1.end_position * node_1.posi_factor)
-        update_range(node_1, "distance_1")
-        break
-    if event in (None, "set_end_posi_2"):
-        node_2.end_position = node_2.get_actual_position()
-        window['end_posi_2'].update(node_2.end_position * node_2.posi_factor)
-        update_range(node_2, "distance_2")
-        break
-
-    # test
-    if event in (None, "hand_cycle_save"):
-        hand_cycle = int(values['hand_cycle'])
-        # window['hand_cycle'].update(hand_cycle)  # 多余
-        break
-    if event in (None, "velo_save_1"):
-        target_velo_1 = int(values['velo_1'])
-        node_1.set_target_velocity(target_velo_1)
-        # window['velo_1'].update(target_velo_1)  # 多余
-        break
-    if event in (None, "velo_save_2"):
-        target_velo_2 = int(values['velo_2'])
-        node_2.set_target_velocity(target_velo_2)
-        # window['velo_2'].update(target_velo_2)  # 多余
-        break
-
-    # commit => test
-    if event in (None, "ON"):
-        node_1.operation_enabled()
-        node_2.operation_enabled()
-        print_data()
-        break
-    if event in (None, "OFF"):
-        node_1.shut_down()
-        node_2.shut_down()
-        break
-
-    if event in (None, "Homing 1"):
-        # node_1.enable_operation()
-        # node_1.setHomingMode()
-        # node_1.homing()
-        node_1.homing_to_actual_position()
-
-        while node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0:
-            time.sleep(0.2)
-
-        print("Homing Attained " + str(node_1.node.sdo[0x6041].bits[12]))
-        print("Homing Error " + str(node_1.node.sdo[0x6041].bits[13]))
-
-        node_1.shut_down()
-        break
-
-    if event in (None, "Homing 2"):
-        node_2.enable_operation()
-        node_2.setHomingMode()
-        node_2.homing()
-
-        while node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0:
-            time.sleep(0.2)
-
-        print("Homing finisched " + str(node_2.node.sdo[0x6041].bits[12]))
-        print("Homing Fehler " + str(node_2.node.sdo[0x6041].bits[13]))
-
-        node_2.shut_down()
-        break
-
-    # test
-    if event in (None, "node_start"):
-        # node_1.operation_enabled()
-        # node_2.operation_enabled()
-
-        set_position_mode()
+        if event in (None, "set_start_posi_1"):
+            node_1.start_position = node_1.get_actual_position()
+            window['start_posi_1'].update(node_1.start_position * node_1.posi_factor)
+            update_range(node_1, "distance_1")
+            break
+        if event in (None, "set_start_posi_2"):
+            node_2.start_position = node_2.get_actual_position()
+            window['start_posi_2'].update(node_2.start_position * node_2.posi_factor)
+            update_range(node_2, 'distance_2')
+            break
+        if event in (None, "set_end_posi_1"):
+            node_1.end_position = node_1.get_actual_position()
+            window['end_posi_1'].update(node_1.end_position * node_1.posi_factor)
+            update_range(node_1, "distance_1")
+            break
+        if event in (None, "set_end_posi_2"):
+            node_2.end_position = node_2.get_actual_position()
+            window['end_posi_2'].update(node_2.end_position * node_2.posi_factor)
+            update_range(node_2, "distance_2")
+            break
 
         # test
-        for i in range(0, hand_cycle):
-            # moveHand()
-            move(node_1.start_position, node_2.start_position)
-            move(node_1.end_position, node_2.end_position)
+        if event in (None, "hand_cycle_save"):
+            hand_cycle = int(values['hand_cycle'])
+            # window['hand_cycle'].update(hand_cycle)  # 多余
+            break
+        if event in (None, "velo_save_1"):
+            target_velo_1 = int(values['velo_1'])
+            node_1.set_target_velocity(target_velo_1)
+            # window['velo_1'].update(target_velo_1)  # 多余
+            break
+        if event in (None, "velo_save_2"):
+            target_velo_2 = int(values['velo_2'])
+            node_2.set_target_velocity(target_velo_2)
+            # window['velo_2'].update(target_velo_2)  # 多余
+            break
 
-        # node_1.shut_down()
-        # node_2.shut_down()
+        # commit => test
+        if event in (None, "ON"):
+            node_1.operation_enabled()
+            node_2.operation_enabled()
+            print_data()
+            break
+        if event in (None, "OFF"):
+            node_1.shut_down()
+            node_2.shut_down()
+            break
 
-        window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
-        window['act_posi_2'].update(node_2.get_actual_position() * node_2.posi_factor)
-        # window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
-        break
+        if event in (None, "Homing 1"):
+            # node_1.enable_operation()
+            # node_1.setHomingMode()
+            # node_1.homing()
+            node_1.homing_to_actual_position()
 
-    # test
-    if event in (None, "node_stop"):
-        node_1.shut_down()
-        node_2.shut_down()
-        # node_1.quick_stop()
-        # node_2.quick_stop()
-        break
+            while node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0:
+                time.sleep(0.2)
 
-    if event in (None, 'hand_info_update'):
-        window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
-        window['act_posi_2'].update(node_2.get_actual_position() * node_2.posi_factor)
-        # window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
-        break
+            print("Homing Attained " + str(node_1.node.sdo[0x6041].bits[12]))
+            print("Homing Error " + str(node_1.node.sdo[0x6041].bits[13]))
+
+            node_1.shut_down()
+            break
+
+        if event in (None, "Homing 2"):
+            node_2.enable_operation()
+            node_2.setHomingMode()
+            node_2.homing()
+
+            while node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0:
+                time.sleep(0.2)
+
+            print("Homing finisched " + str(node_2.node.sdo[0x6041].bits[12]))
+            print("Homing Fehler " + str(node_2.node.sdo[0x6041].bits[13]))
+
+            node_2.shut_down()
+            break
+
+        # test
+        if event in (None, "node_start"):
+            # node_1.operation_enabled()
+            # node_2.operation_enabled()
+
+            # set_position_mode()
+            node_2.set_negative_move_direction()
+
+            # test
+            for i in range(0, hand_cycle):
+                # moveHand()
+                move(node_1.start_position, node_2.start_position)
+                move(node_1.end_position, node_2.end_position)
+
+            # node_1.shut_down()
+            # node_2.shut_down()
+
+            window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
+            window['act_posi_2'].update(node_2.get_actual_position() * node_2.posi_factor)
+            # window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
+            break
+
+        # test
+        if event in (None, "node_stop"):
+            node_1.shut_down()
+            node_2.shut_down()
+            # node_1.quick_stop()
+            # node_2.quick_stop()
+            break
+
+        if event in (None, 'hand_info_update'):
+            window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
+            window['act_posi_2'].update(node_2.get_actual_position() * node_2.posi_factor)
+            # window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
+            break
 
 window.close()  #
 
-sys.exit(app.exec_())  # PyQt5 end line
+# sys.exit(app.exec_())  # PyQt5 end line
