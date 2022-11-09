@@ -19,7 +19,7 @@ class InputWidget(QWidget):
         """ ********** set start position ********** """
 
         self.start_label = QLabel("start position (mm): ", self)
-        self.start_value = QLineEdit(self)
+        self.start_value = QLineEdit(self)  # real-time data
         self.start_btn = QPushButton('Save', self)
 
         layout.addWidget(self.start_label, 0, 0)
@@ -29,7 +29,7 @@ class InputWidget(QWidget):
         """ ********** set end position ********** """
 
         self.end_label = QLabel("end position  (mm): ", self)
-        self.end_value = QLineEdit(self)
+        self.end_value = QLineEdit(self)  # real-time data
         self.end_btn = QPushButton('Save', self)
 
         layout.addWidget(self.end_label, 1, 0)
@@ -39,7 +39,7 @@ class InputWidget(QWidget):
         """ ********** set target velocity ********** """
 
         self.velocity_label = QLabel("target velocity (mm/s): ", self)
-        self.velocity_value = QLineEdit(self.node.velocity, self)
+        self.velocity_value = QLineEdit(str(self.node.velocity), self)  # avg speed
         self.velocity_btn = QPushButton('Save', self)
 
         layout.addWidget(self.velocity_label, 2, 0)
@@ -58,10 +58,10 @@ class InputWidget(QWidget):
 
         """ ********** connect slot ********** """
 
-        self.start_btn.pressed.connect(self.start_btn_slot())
-        self.end_btn.pressed.connect(self.end_btn_slot())
-        self.velocity_btn.pressed.connect()
-        self.end_btn.pressed.connect(self.cycle_btn_slot())
+        self.start_btn.pressed.connect(lambda: self.start_btn_slot())
+        self.end_btn.pressed.connect(lambda: self.end_btn_slot())
+        self.velocity_btn.pressed.connect(lambda: self.velocity_btn_slot())
+        self.end_btn.pressed.connect(lambda: self.cycle_btn_slot())
 
     def start_btn_slot(self):
         self.node.start_position = self.node.get_actual_position()
@@ -114,16 +114,14 @@ class InfoWidget(QWidget):
         self.test_btn.pressed.connect(lambda: self.test_slot())
         layout.addWidget(self.test_btn, 1, 2)
 
-    def test_slot(self):
+    def test_slot(self):  # check
         self.timer.start(10)
         self.timer.timeout.connect(self.timer_slot)
 
-    def timer_slot(self):
+    def timer_slot(self):  # check
         self.position_value.setText(self.node.get_actual_position())
         self.velocity_value.setText(self.node.get_actual_velocity())
 
-
-    def update_range(self):
         self.node.range = round(abs(self.node.end_position - self.node.start_position), 2)
         self.range_value.setText(self.node.range * self.node.position_factor)
 
@@ -154,8 +152,8 @@ class ControlWidget(QWidget):
 
         """ ********** connect slot ********** """
 
-        self.start_btn.pressed.connect(self.start_btn_slot())
-        self.stop_btn.pressed.connect(self.stop_btn_slot())
+        self.start_btn.pressed.connect(lambda: self.start_btn_slot())
+        self.stop_btn.pressed.connect(lambda: self.stop_btn_slot())
 
     def start_btn_slot(self):
         for i in range(0, self.node.cycle):
