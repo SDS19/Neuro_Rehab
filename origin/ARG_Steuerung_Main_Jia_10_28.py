@@ -1,17 +1,17 @@
 # Import libraries
+import math as m
+import os
 import socket
 import time
-import math as m
-import struct
-import PySimpleGUI as sg
 import webbrowser
-import numpy as np
-import matplotlib.pyplot as plt
-import openpyxl as xl
-import Handeinheit_Jia_10_28 as hand
-import os
+
+import PySimpleGUI as sg
 import canopen
-from canopen.profiles.p402 import BaseNode402
+import matplotlib.pyplot as plt
+import numpy as np
+import openpyxl as xl
+
+import Handeinheit_Jia_10_28 as hand
 
 # if true, print all all calculated necessary paramters
 debug = False
@@ -1079,7 +1079,7 @@ target_velo_2 = 0x14
 def set_position_mode():
     node_1.set_profile_position_mode()
     node_2.set_profile_position_mode()
-    node_2.setNegDirection()  # 2号电机方向相反
+    node_2.set_negative_move_direction()  # 2号电机方向相反
     node_1.position_limits_off()
     node_2.position_limits_off()
 
@@ -1110,7 +1110,7 @@ def moveHand():
     node_2.move_to_target_position(node_2.start_position)
 
     # wait node move to target position
-    while node_1.getActualVelocity() != 0 or node_2.getActualVelocity() != 0:
+    while node_1.get_actual_velocity() != 0 or node_2.get_actual_velocity() != 0:
         time.sleep(0.1)
 
     print("1 reached:" + str(node_1.node.sdo[0x6041].bits[10]))
@@ -1612,28 +1612,27 @@ while True:
                 node_2.shut_down()
                 break
 
+            # test
             if event in (None, "Homing 1"):
-                node_1.enable_operation()
-                node_1.setHomingMode()
-                node_1.homing()
+                # node_1.enable_operation()
+                # node_1.setHomingMode()
+                # node_1.homing()
+                node_1.homing_to_actual_position()
 
-                while (node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0):
+                while node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0:
                     time.sleep(0.2)
-                print("Homing finisched " + str(node_1.node.sdo[0x6041].bits[12]))
-                print("Homing Fehler " + str(node_1.node.sdo[0x6041].bits[13]))
+                print("Homing attained " + str(node_1.node.sdo[0x6041].bits[12]))
+                print("Homing Error " + str(node_1.node.sdo[0x6041].bits[13]))
 
-                # node_1.switchOff()
                 node_1.shut_down()
-
                 break
 
             if event in (None, "Homing 2"):
-
                 node_2.enable_operation()
-
                 node_2.setHomingMode()
                 node_2.homing()
-                while (node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0):
+
+                while node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0:
                     time.sleep(0.2)
                 print("Homing finisched " + str(node_2.node.sdo[0x6041].bits[12]))
                 print("Homing Fehler " + str(node_2.node.sdo[0x6041].bits[13]))
@@ -1643,7 +1642,7 @@ while True:
 
                 break
 
-            # 1175
+            # test
             if event in (None, "node_start"):
                 node_1.operation_enabled()
                 node_2.operation_enabled()

@@ -4,7 +4,6 @@ from canopen.profiles.p402 import BaseNode402
 
 
 class Drive:
-    cycle = 1
 
     def __init__(self, node_id, network):
 
@@ -15,8 +14,17 @@ class Drive:
         self.node.nmt.state = 'OPERATIONAL'
 
         self.start_position = 0
+
         self.end_position = 0
+
         self.range = 0
+
+        self.cycle = 1
+
+        self.position_factor = self.getPosiFactor()
+
+        # ++++++++++++++++++++
+
         self.distance = 0
 
         self.velocity = 0x14
@@ -116,6 +124,7 @@ class Drive:
     # 0x607A: Target Position
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
     def move_to_target_position(self, target_position):
+        self.position_limits_off()
         self.operation_enabled()  # power on
         self.node.sdo[0x6060].raw = 0x01
         self.node.sdo[0x607A].raw = target_position
