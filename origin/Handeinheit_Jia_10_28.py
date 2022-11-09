@@ -138,9 +138,9 @@ class Drive:
     # 0x6063: Position Actual Internal Value (in internen Einheiten)
     # 0x6064: Position Actual Value (in benutzerdefinierten Einheiten)
     def get_actual_position(self):
-        # print("Position Actual Internal Value: " + str(self.node.sdo[0x6063].raw) + "\n")
-        print("Position Actual Value: " + str(self.node.sdo[0x6064].raw))
-        return self.node.sdo['Position Actual Value'].raw
+        position = self.node.sdo[0x6064].raw
+        print("Position Actual Value: " + str(position))
+        return position
 
     # 0x6093: Position Factor
     def getPosiFactor(self):
