@@ -158,8 +158,9 @@ class Drive:
 
     # 0x606C: Velocity Actual Value
     def get_actual_velocity(self):
-        print("Velocity Actual Value: " + str(self.node.sdo[0x606C].raw))
-        return self.node.sdo['Velocity Actual Value'].raw
+        velocity = self.node.sdo[0x606C].raw
+        print("Velocity Actual Value: " + str(velocity))
+        return velocity
 
     """ ******************** Test Method ******************** """
 
