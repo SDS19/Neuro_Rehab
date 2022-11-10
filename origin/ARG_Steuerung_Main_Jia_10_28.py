@@ -1071,10 +1071,8 @@ node_2 = hand.Drive(network, 126)
 
 hand_cycle = 1  # 循环次数
 
-# target velocity
-target_velo_1 = 0x14  # 0x14 -> Error Output P137 ???
+target_velo_1 = 0x14  # 0x14 = 20
 target_velo_2 = 0x14
-
 
 def set_position_mode():
     node_1.set_profile_position_mode()
@@ -1217,19 +1215,18 @@ frame_hand_info = [[sg.Text("Actual Position:", size=(14, 2), font="Any 15")],
                     sg.Text(node_2.get_actual_position() * node_2.posi_factor, size=(7, 2), font="Any 15",
                             key="act_posi_2")],
                    [sg.Text("Aperture: ", size=(8, 2), font="Any 15"),
-                    # aperture ???
+                    # aperture 食指与拇指间距
                     sg.Text(str(calcAperture(node_1.distance * node_1.posi_factor)), size=(7, 2), font="Any 15",
                             key="aperture")],
                    [sg.Button("Update", size=(14, 2), font="Any 15", button_color=("white", "grey"),
                               key="hand_info_update")]]
 
-""" **************************************** Hand GUI end **************************************** """
-
 hand_window_layout = [
     [sg.Frame("Set Up", frame_hand_setup, font="Any 20", title_color='black')],
     [sg.Frame("Drive", frame_hand_move, font="Any 20", title_color='black'), sg.Push(),
-     sg.Frame("Info", frame_hand_info, font="Any 20", title_color='black'), sg.Push()],
-]
+     sg.Frame("Info", frame_hand_info, font="Any 20", title_color='black'), sg.Push()]]
+
+""" **************************************** Hand GUI end **************************************** """
 
 # All the stuff inside your window.
 virtual_keyboard = [
@@ -1553,7 +1550,7 @@ while True:
             # 1133
             if event in (None, "set_start_posi_1"):
                 node_1.start_position = node_1.get_actual_position()
-                window['start_posi_1'].update(node_1.start_position * node_1.posi_factor)
+                window['start_posi_1'].update(node_1.start_position * node_1.position_factor)
                 update_range(node_1, "distance_1")
                 # node_1.distance = round(abs(node_1.end_position - node_1.start_position), 2)
                 # window['distance_1'].update(node_1.distance * node_1.posi_factor)
@@ -1561,7 +1558,7 @@ while True:
 
             if event in (None, "set_start_posi_2"):
                 node_2.start_position = node_2.get_actual_position()
-                window['start_posi_2'].update(node_2.start_position * node_2.posi_factor)
+                window['start_posi_2'].update(node_2.start_position * node_2.position_factor)
                 update_range(node_2, 'distance_2')
                 # node_2.distance = round(abs(node_2.end_position - node_2.start_position), 2)
                 # window['distance_2'].update(node_2.distance * node_2.posi_factor)
@@ -1570,7 +1567,7 @@ while True:
             # 1141
             if event in (None, "set_end_posi_1"):
                 node_1.end_position = node_1.get_actual_position()
-                window['end_posi_1'].update(node_1.end_position * node_1.posi_factor)
+                window['end_posi_1'].update(node_1.end_position * node_1.position_factor)
                 update_range(node_1, "distance_1")
                 # node_1.distance = round(abs(node_1.end_position - node_1.start_position))
                 # window['distance_1'].update(node_1.distance * node_1.posi_factor)
@@ -1578,7 +1575,7 @@ while True:
 
             if event in (None, "set_end_posi_2"):
                 node_2.end_position = node_2.get_actual_position()
-                window['end_posi_2'].update(node_2.end_position * node_2.posi_factor)
+                window['end_posi_2'].update(node_2.end_position * node_2.position_factor)
                 update_range(node_2, "distance_2")
                 # node_2.distance = round(abs(node_2.end_position - node_2.start_position))
                 # window['distance_2'].update(node_2.distance * node_2.posi_factor)
@@ -1670,9 +1667,9 @@ while True:
                 break
 
             if event in (None, 'hand_info_update'):
-                window['act_posi_1'].update(node_1.get_actual_position() * node_1.posi_factor)
-                window['act_posi_2'].update(node_2.get_actual_position() * node_2.posi_factor)
-                window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
+                window['act_posi_1'].update(node_1.get_actual_position() * node_1.position_factor)
+                window['act_posi_2'].update(node_2.get_actual_position() * node_2.position_factor)
+                window['aperture'].update(str(calcAperture(node_1.distance * node_1.position_factor)))
                 break
 
             """ **************************************** Hand Event end **************************************** """
