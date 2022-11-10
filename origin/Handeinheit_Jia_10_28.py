@@ -6,32 +6,29 @@ from canopen.profiles.p402 import BaseNode402
 class Drive:
 
     def __init__(self, node_id, network):
-
         self.node = BaseNode402(node_id, '/home/pi/Test/mclm.eds')
 
         network.add_node(self.node)
 
         self.node.nmt.state = 'OPERATIONAL'
 
+        """ ********** variable ********** """
+
         self.start_position = 0
 
         self.end_position = 0
 
+        self.distance = 0  # delete
         self.range = 0
+
+        self.position_factor = self.getPosiFactor()
+        # self.posi_factor = self.getPosiFactor()  # delete
+
+        self.velocity = 0x14  # target velocity: 0x14 = 20
 
         self.cycle = 1
 
-        self.position_factor = self.getPosiFactor()
-
-        # ++++++++++++++++++++
-
-        self.distance = 0
-
-        self.velocity = 0x14
-
-        self.posi_factor = self.getPosiFactor()
-
-        # self.velo_factor = self.getVeloFactor()
+        # self.velo_factor = self.getVeloFactor()  delete
 
     """ ********** Step 1: P74 CiA 402 CANopen Device Profile **********
     
@@ -89,31 +86,34 @@ class Drive:
     def setHomingMode(self):
         self.node.sdo[0x6060].raw = 0x06
         self.node.sdo[0x6098].raw = 0x23
+
     def set_homing_mode(self):
         self.node.sdo[0x6060].raw = 0x06
+
     def homing(self):
         self.node.sdo[0x6040].bits[4] = 1
 
     # test 完全封装
-    # 0x6060: Modes of Operation -> 0x06: Homing Mode
-    # 0x6098: Homing Method -> 35: Homing at actual position
+    # 0x6060: Modes of Operation
+    # 0x6098: Homing Method
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
     def homing_to_actual_position(self):
         self.operation_enabled()  # power on
-        self.node.sdo[0x6060].raw = 0x06
-        self.node.sdo[0x6098].raw = 0x23  # 0x23 = 35
+        self.node.sdo[0x6060].raw = 0x06  # 0x06: Homing Mode
+        self.node.sdo[0x6098].raw = 0x23  # 0x23 = 35: Homing at actual position
         self.node.sdo[0x6040].bits[4] = 1  # start to move
         self.get_actual_position()
-        self.shut_down()  # power off
 
     """ ********** Profile Position Mode ********** """
 
     # 0x6060: Modes of Operation -> 0x01: Profile Position Mode
     # 0x6061: Modes of Operation Display
-    # 0x6067: Position Window ???
+    # 0x6067: Position Window
     def set_profile_position_mode(self):
         self.node.sdo[0x6060].raw = 0x01
-        # self.node.sdo[0x6067].raw = 0x3E8  # ???
+        self.node.sdo[0x6067].raw = 0x3E8  # 0x3E8 = 1000
+        self.operation_enabled()
+        self.position_limits_off()
 
     # 0x2338: General Settings -> 3: Active Position Limits in Position Mode
     def position_limits_off(self):
@@ -124,15 +124,11 @@ class Drive:
     # 0x607A: Target Position
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
     def move_to_target_position(self, target_position):
-        self.position_limits_off()
-        self.operation_enabled()  # power on
-        self.node.sdo[0x6060].raw = 0x01
         self.node.sdo[0x607A].raw = target_position
         self.node.sdo[0x6040].bits[4] = 1  # start to move
-        time.sleep(0.1)
-        if self.node.sdo[0x6041].bits[12] == 1:
-            print("Set-point Acknowledge: " + self.node.sdo[0x6041].bits[12])
-        self.shut_down()  # power off
+        # time.sleep(0.1)
+        # if self.node.sdo[0x6041].bits[12] == 1:
+        #     print("Set-point Acknowledge: " + self.node.sdo[0x6041].bits[12])
 
     # P80 => Position Factor
     # 0x6063: Position Actual Internal Value (in internen Einheiten)
@@ -182,3 +178,7 @@ class Drive:
     #     self.node.sdo[0x6060].raw = 0x08
     #     mode = self.node.sdo[0x6061].raw
     #     print(mode)
+
+
+if __name__ == '__main__':
+    pass
