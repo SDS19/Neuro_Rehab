@@ -25,12 +25,12 @@ class Drive:
         self.velocity = 0x32  # target velocity: 0x14 = 50
 
     """ ********** Step 1: P74 CiA 402 CANopen Device Profile **********
-    
+
     This device profile has a >>control state machine<< for controlling the behavior of the drive.
-    
+
     0x6040: Controlword
     0x6041: Statusword
-    
+
     Switch On Disabled 
     - Shutdown => Ready to Switch On  (0x0006)
     - Switch On => Switched On (0x0007)
@@ -60,7 +60,7 @@ class Drive:
         self.node.sdo[0x6040].bits[8] = 1  # stop drive
 
     """ ******************** Step 2: P127 Modes of Operation ******************** 
-    
+
     Profile Position Mode: 1
     Profile Velocity Mode: 3
     Homing Mode:           6
@@ -76,9 +76,16 @@ class Drive:
         self.node.sdo[0x6060].raw = 0x06  # 0x06: Homing Mode
         self.node.sdo[0x6098].raw = 0x23  # 0x23 = 35: Homing at actual position
         self.node.sdo[0x6040].bits[4] = 1  # start to move
-        print("Homing Attained (1) = " + str(self.node.sdo[0x6041].bits[12]) + ", Homing Error (0) = " + str(self.node.sdo[0x6041].bits[13]))
+        print("Homing Attained (1) = " + str(self.node.sdo[0x6041].bits[12]) +
+              ", Homing Error (0) = " + str(self.node.sdo[0x6041].bits[13]))
 
     """ ********** Profile Position Mode ********** """
+
+    # 0x607E: Polarity (P129)
+    # Bit 7 = 1 negative Bewegungsrichtung im Positionierbetrieb
+    # Bit 6 = 1 negative Bewegungsrichtung im Geschwindigkeitsbetrieb
+    def set_negative_move_direction(self):
+        self.node.sdo[0x607E].bits[7] = 1
 
     # 0x6060: Modes of Operation -> 0x01: Profile Position Mode
     # 0x6061: Modes of Operation Display
@@ -100,7 +107,6 @@ class Drive:
         self.operation_enabled()
         self.node.sdo[0x607A].raw = target_position
         self.node.sdo[0x6040].bits[4] = 1  # start to move
-
 
     # P80 => Position Factor
     # 0x6063: Position Actual Internal Value (in internen Einheiten)
@@ -131,14 +137,6 @@ class Drive:
         return velocity
 
     """ ******************** Test Method ******************** """
-
-    # 进一步封装Mode方法，实现一个方法调用即可完成模式选择和目标值设置，把state machine方法也封装进去
-
-    # 0x607E: Polarity (P129)
-    # Bit 7 = 1 negative Bewegungsrichtung im Positionierbetrieb
-    # Bit 6 = 1 negative Bewegungsrichtung im Geschwindigkeitsbetrieb
-    def set_negative_move_direction(self):
-        self.node.sdo[0x607E].bits[7] = 1
 
     # test
     # 0x2310: Digital Input Settings

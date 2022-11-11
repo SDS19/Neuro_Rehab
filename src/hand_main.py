@@ -28,17 +28,21 @@ hand_cycle = 3  # cycle time
 
 """ **************************************** PyQt5 GUI **************************************** """
 
+
 # ********** optimize **********
 def print_data():
     while True:
         node_1.get_actual_velocity()
         node_1.get_actual_position()
         time.sleep(0.01)
+
+
 # ********** optimize **********
 
 def wait():
     while node_1.get_actual_velocity() != 0 or node_2.get_actual_velocity() != 0:
-        time.sleep(0.01)
+        time.sleep(0.1)
+
 
 def moveHand():
     node_1.move_to_target_position(node_1.end_position)
@@ -58,6 +62,7 @@ def moveHand():
 
     # wait node move to target position
     wait()
+
 
 # def calcAperture(stroke):
 #    if stroke <= 50:
@@ -157,7 +162,7 @@ while True:
             break
 
         def update_range(node, label):
-            node.distance = round(abs(node.end_position - node.start_position), 2)
+            node.range = round(abs(node.end_position - node.start_position), 2)
             window[label].update(node.range * node.position_factor)
 
         if event in (None, "set_start_posi_1"):
@@ -221,6 +226,7 @@ while True:
         if event in (None, "node_start"):
             node_1.set_profile_position_mode()
             node_2.set_profile_position_mode()
+
             node_2.set_negative_move_direction()
 
             for i in range(0, hand_cycle):
