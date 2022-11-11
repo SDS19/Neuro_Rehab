@@ -18,17 +18,11 @@ class Drive:
 
         self.end_position = 0
 
-        self.distance = 0  # delete
         self.range = 0
 
         self.position_factor = self.getPosiFactor()
-        # self.posi_factor = self.getPosiFactor()  # delete
 
-        self.velocity = 0x14  # target velocity: 0x14 = 20
-
-        self.cycle = 1
-
-        # self.velo_factor = self.getVeloFactor()  delete
+        self.velocity = 0x32  # target velocity: 0x14 = 50
 
     """ ********** Step 1: P74 CiA 402 CANopen Device Profile **********
     
@@ -51,29 +45,19 @@ class Drive:
 
     def shut_down(self):
         self.node.sdo[0x6040].raw = 0x06
-        # print("shut down => Ready to Switch On: " + str(self.node.sdo[0x6041].raw))
+        # print("shut down => Ready to Switch On")
 
     def switch_on(self):
         self.node.sdo[0x6040].raw = 0x07
-        # print("switch on => Switched On: " + str(self.node.sdo[0x6041].raw))
+        # print("switch on => Switched On"))
 
     def enable_operation(self):
         self.node.sdo[0x6040].raw = 0x0F
-        # print("enable operation => Operation Enabled: " + str(self.node.sdo[0x6041].raw))
+        # print("enable operation => Operation Enabled"))
 
-    # test
-    def quick_stop(self):
-        self.node.sdo[0x6040].raw = 0x02
-        # print("quick stop => Switch On Disabled: " + str(self.node.sdo[0x6041].raw))
-
-    # test
+    # test multi-threading
     def halt(self):
         self.node.sdo[0x6040].bits[8] = 1  # stop drive
-
-    # test
-    def disable_voltage(self):
-        self.node.sdo[0x6040].raw = 0x00
-        # print("disable voltage => Switch On Disabled: " + str(self.node.sdo[0x6041].raw))
 
     """ ******************** Step 2: P127 Modes of Operation ******************** 
     
@@ -83,17 +67,7 @@ class Drive:
 
         ********** P87 Homing Mode ********** """
 
-    def setHomingMode(self):
-        self.node.sdo[0x6060].raw = 0x06
-        self.node.sdo[0x6098].raw = 0x23
-
-    def set_homing_mode(self):
-        self.node.sdo[0x6060].raw = 0x06
-
-    def homing(self):
-        self.node.sdo[0x6040].bits[4] = 1
-
-    # test 完全封装
+    # check
     # 0x6060: Modes of Operation
     # 0x6098: Homing Method
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
@@ -102,7 +76,7 @@ class Drive:
         self.node.sdo[0x6060].raw = 0x06  # 0x06: Homing Mode
         self.node.sdo[0x6098].raw = 0x23  # 0x23 = 35: Homing at actual position
         self.node.sdo[0x6040].bits[4] = 1  # start to move
-        self.get_actual_position()
+        print("Homing Attained (1) = " + str(self.node.sdo[0x6041].bits[12]) + ", Homing Error (0) = " + str(self.node.sdo[0x6041].bits[13]))
 
     """ ********** Profile Position Mode ********** """
 
@@ -110,10 +84,9 @@ class Drive:
     # 0x6061: Modes of Operation Display
     # 0x6067: Position Window
     def set_profile_position_mode(self):
+        self.position_limits_off()
         self.node.sdo[0x6060].raw = 0x01
         self.node.sdo[0x6067].raw = 0x3E8  # 0x3E8 = 1000
-        self.operation_enabled()
-        self.position_limits_off()
 
     # 0x2338: General Settings -> 3: Active Position Limits in Position Mode
     def position_limits_off(self):
@@ -124,11 +97,10 @@ class Drive:
     # 0x607A: Target Position
     # 0x6040: Controlword -> 4: New set-point/Homing operation start
     def move_to_target_position(self, target_position):
+        self.operation_enabled()
         self.node.sdo[0x607A].raw = target_position
         self.node.sdo[0x6040].bits[4] = 1  # start to move
-        # time.sleep(0.1)
-        # if self.node.sdo[0x6041].bits[12] == 1:
-        #     print("Set-point Acknowledge: " + self.node.sdo[0x6041].bits[12])
+
 
     # P80 => Position Factor
     # 0x6063: Position Actual Internal Value (in internen Einheiten)
@@ -172,13 +144,4 @@ class Drive:
     # 0x2310: Digital Input Settings
     # Bit 5: Switch Polarity
     def test(self):
-        print(self.node.sdo[0x2310].bits[5])
-
-    # def setCycPosiMode(self):
-    #     self.node.sdo[0x6060].raw = 0x08
-    #     mode = self.node.sdo[0x6061].raw
-    #     print(mode)
-
-
-if __name__ == '__main__':
-    pass
+        print(self.node.sdo[0x2310][5].raw)
