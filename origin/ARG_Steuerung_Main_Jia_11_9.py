@@ -230,31 +230,46 @@ class Motor:
     """ ********** 20.11.2022 start ********** """
 
     def test_homing(self):
-        self.sendCommand(self.enableOperation_array)
+        self.send_command(self.enableOperation_array)
         self.setMode(6)
         # 6092:01h Feed => 5400
-        self.sendCommand(bytearray([0, 0, 0, 0, 0, 17, 0, 43, 13, 1, 0, 0, 96, 146, 1, 0, 0, 0, 4, 24, 21, 0, 0]))
+        self.send_command(bytearray([0, 0, 0, 0, 0, 17, 0, 43, 13, 1, 0, 0, 96, 146, 1, 0, 0, 0, 4, 24, 21, 0, 0]))
+        # 6092:02h Shaft revolutions => 1
+        self.send_command(bytearray([0, 0, 0, 0, 0, 17, 0, 43, 13, 1, 0, 0, 96, 146, 2, 0, 0, 0, 4, 1, 0, 0, 0]))
+        # 6099:01h Endlagenschaltersuchgeschwindigkeit => 60 rpm (60000)
+        self.send_command(bytearray([0, 0, 0, 0, 0, 17, 0, 43, 13, 1, 0, 0, 96, 153, 1, 0, 0, 0, 4, 112, 23, 0, 0]))
+        # 6099:02h Nullpunktsuchgeschwindigkeit => 60 rpm (6000)
+        self.send_command(bytearray([0, 0, 0, 0, 0, 17, 0, 43, 13, 1, 0, 0, 96, 153, 2, 0, 0, 0, 4, 112, 23, 0, 0]))
+        # 609Ah Homing acceleration => 1000 rpm/min² (100000)
+        self.send_command(bytearray([0, 0, 0, 0, 0, 17, 0, 43, 13, 1, 0, 0, 96, 154, 0, 0, 0, 0, 4, 160, 134, 1, 0]))
+        # 6040h Controlword => Start movement
+        self.send_command(bytearray([0, 0, 0, 0, 0, 15, 0, 43, 13, 1, 0, 0, 96, 64, 0, 0, 0, 0, 2, 31, 0]))
+
+        # 6041h Statusword
+        while (self.send_command(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 22]
+               and self.send_command(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 6]  # ???
+               and self.send_command(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 34]  # ???
+               and self.send_command(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 2]):  # ???
+            if self.send_command(self.DInputs_array) == [0, 0, 0, 0, 0, 17, 0, 43, 13, 0, 0, 0, 96, 253, 0, 0, 0, 0, 4, 8, 0, 66, 0]:
+                break
+            time.sleep(0.1)
+            print("Homing...")
+        print(self.Axis + " homing success!")
 
     # Function to set and start homing movement (manuel page 103)
     # Arguments are (velocity, acceleration of homing)
     def homing(self, velo, acc):
         self.setMode(6)
         self.sendCommand(self.enableOperation_array)
-
-        # Set feed constant feed to 5400 with object 6092h subindex 1
         self.sendCommand(bytearray([0, 0, 0, 0, 0, 17, 0, 43, 13, 1, 0, 0, 96, 146, 1, 0, 0, 0, 4, 24, 21, 0, 0]))
-
-        # Set feed constant shaft revolutions to 1 with object 6092h subindex 2
         self.sendCommand(bytearray([0, 0, 0, 0, 0, 17, 0, 43, 13, 1, 0, 0, 96, 146, 2, 0, 0, 0, 4, 1, 0, 0, 0]))
 
         # Convert input velocity to four bytes
         velo_byte_list = self.convertToFourByte(velo)
-
         # Set switch search speed to converted input with object 6099h subindex 1
         self.sendCommand(bytearray(
             [0, 0, 0, 0, 0, 17, 1, 43, 13, 1, 0, 0, 96, 153, 1, 0, 0, 0, 4, velo_byte_list[0], velo_byte_list[1],
              velo_byte_list[2], velo_byte_list[3]]))
-
         # Set zero search speed to converted input with object 6099h subindex 2
         self.sendCommand(bytearray(
             [0, 0, 0, 0, 0, 17, 1, 43, 13, 1, 0, 0, 96, 153, 2, 0, 0, 0, 4, velo_byte_list[0], velo_byte_list[1],
@@ -262,7 +277,6 @@ class Motor:
 
         # Convert input acceleration to four bytes
         acc_byte_list = self.convertToFourByte(acc)
-
         # Set acceleration to converted input for homing run with object 609Ah
         self.sendCommand(bytearray(
             [0, 0, 0, 0, 0, 17, 1, 43, 13, 1, 0, 0, 96, 154, 0, 0, 0, 0, 4, acc_byte_list[0], acc_byte_list[1],
@@ -276,14 +290,10 @@ class Motor:
 
         # Avoid other operations while homing runs for safety, check the status with statusword until homing finished
         print("\nWait Homing", end='')
-        while (self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39,
-                                                       22]
-               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           8, 6]
-               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           8, 34]
-               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           8, 2]):
+        while (self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 22]
+               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 6]
+               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 34]
+               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 2]):
             time.sleep(0.01)
             print(".", end='')
         print("\n" + self.Axis + "Homing finisched")
