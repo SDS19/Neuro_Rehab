@@ -21,50 +21,52 @@ debug = False
 class Motor:
     def __init__(self, IP_Adress, Port, Axis):
 
-        # Attributes of motor
-
         self.IPAdress = IP_Adress  # Define IP address
         self.Socket = Port  # Define the port (default:502) to create socket
         self.Axis = Axis  # Define Label for the connected Motor
         self.error = 0  # Define Error state of Motor
         self.position = 250.0  # Define actual position of Motor
 
-        # Statusword 6041h to request status
+        """ check => Statusword 6041h to request status """
         self.status_array = bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2])
         # print(status_array)
 
-        # Controlword 6040h to Shutdown
+        """ check => Controlword 6040h to Shutdown P173 """
         self.shutdown_array = bytearray([0, 0, 0, 0, 0, 15, 0, 43, 13, 1, 0, 0, 96, 64, 0, 0, 0, 0, 2, 6, 0])
 
-        # Controlword 6040h to Switch on
+        """ check => Controlword 6040h to Switch on """
         self.switchOn_array = bytearray([0, 0, 0, 0, 0, 15, 0, 43, 13, 1, 0, 0, 96, 64, 0, 0, 0, 0, 2, 7, 0])
 
-        # Controlword 6040h enable Operation
+        """ check => Controlword 6040h enable Operation """
         self.enableOperation_array = bytearray([0, 0, 0, 0, 0, 15, 0, 43, 13, 1, 0, 0, 96, 64, 0, 0, 0, 0, 2, 15, 0])
 
-        # Controlword 6040h to stop motion
+        """ Controlword 6040h to stop motion """
         self.stop_array = bytearray([0, 0, 0, 0, 0, 15, 0, 43, 13, 1, 0, 0, 96, 64, 0, 0, 0, 0, 2, 15, 1])
 
-        # Controlword 6040h to reset Motor ( bit8 = 1)
+        """ Controlword 6040h to reset Motor ( bit8 = 1) """
         self.reset_array = bytearray([0, 0, 0, 0, 0, 15, 0, 43, 13, 1, 0, 0, 96, 64, 0, 0, 0, 0, 2, 0, 1])
 
-        # Read Object 60A8h for SI Unit Position
+        """ check => Read Object 60A8h for SI Unit Position """
         self.SI_unit_array = bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 168, 0, 0, 0, 0, 4])
 
-        # Read Object 60FDh for Status of digital Inputs
+        """ Read Object 60FDh for Status of digital Inputs """
         self.DInputs_array = bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 253, 0, 0, 0, 0, 4])
 
         # Read Obejct 6092h subindex 1 for the feed rate
         self.feedrate_array = bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 146, 1, 0, 0, 0, 4])
 
+        """ ******************** start 16.11.2022 ******************** """
+
         # Establish bus connection
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         except socket.error:
-            print('failed to create sockt')
+            print('failed to create socket')
 
         self.s.connect((IP_Adress, Port))
         print(self.Axis + ' Socket created')
+
+        """ ******************** end 16.11.2022 ******************** """
 
         # Initialize
         self.initialize()
@@ -74,7 +76,6 @@ class Motor:
 
     # Function to initialize the Motor
     def initialize(self):
-
         # Call of the function sendCommand to start the State Machine with the previously defined telegrams (Manual: Visualisation State Machine)
         self.sendCommand(self.status_array)
         self.sendCommand(self.shutdown_array)
@@ -83,11 +84,14 @@ class Motor:
         self.sendCommand(self.status_array)
         self.sendCommand(self.enableOperation_array)
 
-    # Functio to send command and recive data
+    def send_command(self, data):
+        self.s.send(data)
+        return list(self.s.recv(24))
+
+    # check => Functio to send command and recive data
     def sendCommand(self, data):
         self.s.send(data)
         res = self.s.recv(24)
-
         return list(res)
 
     # Function to request status
@@ -97,44 +101,31 @@ class Motor:
     # Function to set movement mode and check with statusword
     def setMode(self, mode):
         self.sendCommand(bytearray([0, 0, 0, 0, 0, 14, 0, 43, 13, 1, 0, 0, 96, 96, 0, 0, 0, 0, 1, mode]))
-        while (self.sendCommand(bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 97, 0, 0, 0, 0, 1])) != [0, 0, 0,
-                                                                                                               0, 0, 14,
-                                                                                                               0, 43,
-                                                                                                               13, 0, 0,
-                                                                                                               0, 96,
-                                                                                                               97, 0, 0,
-                                                                                                               0, 0, 1,
-                                                                                                               mode]):
+        while (self.sendCommand(bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 97, 0, 0, 0, 0, 1])) !=
+               [0, 0, 0, 0, 0, 14, 0, 43, 13, 0, 0, 0, 96, 97, 0, 0, 0, 0, 1, mode]):
             # print(str(self.Axis) +' wait for mode ' + str(mode))
             time.sleep(0.1)
         print(str(self.Axis) + 'set mode ' + str(mode) + " successfully")
 
+    # check
     # Function to set Status Shut Down and check with statusword. Checking several Statuswords because of various options. look at Bit assignment Statusword, data package in user manual
     def setShutDown(self):
         self.sendCommand(self.reset_array)
         self.sendCommand(self.shutdown_array)
-        while (self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 33,
-                                                       6]
-               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           33, 22]
-               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           33, 2]):
+        while (self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 33, 6]
+               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 33, 22]
+               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 33, 2]):
             print("wait for SHUT DOWN")
-
-            # 1 second delay
             time.sleep(1)
 
+    # check
     # Function to set Status Switch On and check with statusword. Checking several Statuswords because of various options. look at Bit assignment Statusword, data package in user manual
     def setSwitchOn(self):
         self.sendCommand(self.switchOn_array)
-        while (self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 35,
-                                                       6]
-               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           35, 22]
-               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           35, 2]):
+        while (self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 35, 6]
+               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 35, 22]
+               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 35, 2]):
             print("wait for SWITCH ON")
-
             time.sleep(1)
 
     # Function to set Status Operation Enable and check with statusword. Checking several Statuswords because of various options. look at Bit assignment Statusword, data package in user manual
@@ -159,16 +150,12 @@ class Motor:
         self.sendCommand(self.stop_array)
         print("Movement is stopped")
 
-    # Function to check motor error
+    # Function to check motor error ???
     def checkError(self):
         if (self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 22]
-                or self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           8, 6]
-                or self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           8, 34]
-                or self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           8, 2]):
-
+                or self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 6]
+                or self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 34]
+                or self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 2]):
             self.error = 1
         else:
             self.error = 0
@@ -178,7 +165,6 @@ class Motor:
         ans_velocity = self.sendCommand(bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 108, 0, 0, 0, 0, 4]))
         act_velocity = abs(int.from_bytes(ans_velocity[19:], byteorder='little', signed=True) / self.SI_unit_factor)
         # print("\n"+self.Axis +' actual velo: '+str(act_velocity))
-
         return act_velocity
 
     # Functioon to get actual Position of Motor with read object 6064h and convert it from Byte to Integer
@@ -189,15 +175,15 @@ class Motor:
         self.position = act_position
         return act_position
 
-    # Function to calculate the SI Unit Factor of motor (manuel page 164)
+    # Function to calculate the SI Unit Factor of motor (page 164)
     def calcSIUnitFactor(self):
-
         # Get SI Unit Factor and convert it from Byte to Integer
         ans_position = self.sendCommand(self.SI_unit_array)
+        """ ********** test ********** """
         ans_motion_method = int.from_bytes(ans_position[21:22], byteorder='big')
         ans_position_scale = int.from_bytes(ans_position[22:], byteorder='little')
 
-        # If ==1(01h), the movement type is linear
+        # 01h the movement type is linear
         if (ans_motion_method == 1):
             # If the smaller than 5, the factor is to scale up
             if (ans_position_scale > 5):
@@ -218,46 +204,41 @@ class Motor:
         # print("SIUnit scale: "+ str(ans_position_scale))
         return self.SI_unit_factor
 
-    # Function to convert the to send data from Integer(dec) to Four Bytes in Telegramm(dec)
+    # Function to convert the to send data from Integer(dec) to Four Bytes in Telegram(dec)
     def convertToFourByte(self, x):
-
         # Transfer the input Integer with SI unit factor, to fit the value dimension of motor
         x = int(self.SI_unit_factor * x)
 
         # container for Four Bytes
         byte_list = [0, 0, 0, 0]
-
-        # Transfer the input Integer to Byte, the Bytes will be filled from left to right (index 0-> index 3)
-        # If input < 2^8, put it in byte[0]
-        if x >= 0 and x < 256:
+        if 0 <= x < 256:
             byte_list[0] = x
-        # If 2^8 < input < 2^16, put its Multiples of 256 in byte[1] and the rest in byte[0]
-        if x >= 256 and x < 65536:
+        if 256 <= x < 65536:
             byte_list[1] = int(x / 256)
             byte_list[0] = int(x % 256)
-        # Similar to above
-        if x >= 65536 and x < 16777216:
+        if 65536 <= x < 16777216:
             byte_list[2] = int(x / m.pow(256, 2))
             byte_list[1] = int((x - (byte_list[2] * m.pow(256, 2))) / 256)
-            byte_list[0] = int(x - (((byte_list[2] * m.pow(256, 2)) + (byte_list[1] * 256))))
-        # Similar to above
-        if x >= 16777216 and x < 4294967296:
+            byte_list[0] = int(x - ((byte_list[2] * m.pow(256, 2) + byte_list[1] * 256)))
+        if 16777216 <= x < 4294967296:
             byte_list[3] = int(x / m.pow(256, 3))
             byte_list[2] = int((x - byte_list[3] * m.pow(256, 3)) / m.pow(256, 2))
             byte_list[1] = int(((x - byte_list[3] * m.pow(256, 3)) - (byte_list[2] * m.pow(256, 2))) / 256)
-            byte_list[0] = int(
-                x - ((byte_list[3] * m.pow(256, 3)) + (byte_list[2] * m.pow(256, 2)) + (byte_list[1] * 256)))
-
+            byte_list[0] = int(x - ((byte_list[3] * m.pow(256, 3)) + (byte_list[2] * m.pow(256, 2)) + (byte_list[1] * 256)))
         return byte_list
+
+    """ ********** 20.11.2022 start ********** """
+
+    def test_homing(self):
+        self.sendCommand(self.enableOperation_array)
+        self.setMode(6)
+        # 6092:01h Feed => 5400
+        self.sendCommand(bytearray([0, 0, 0, 0, 0, 17, 0, 43, 13, 1, 0, 0, 96, 146, 1, 0, 0, 0, 4, 24, 21, 0, 0]))
 
     # Function to set and start homing movement (manuel page 103)
     # Arguments are (velocity, acceleration of homing)
     def homing(self, velo, acc):
-
-        # Set Modes of Operation to Homing mode (Byte19 = 6) with Object 6060h
         self.setMode(6)
-
-        # Set state of motor to operation enable
         self.sendCommand(self.enableOperation_array)
 
         # Set feed constant feed to 5400 with object 6092h subindex 1
@@ -293,7 +274,7 @@ class Motor:
         # Start homing run with controlword 6040h (via Bit4=1)
         self.sendCommand(bytearray([0, 0, 0, 0, 0, 15, 0, 43, 13, 1, 0, 0, 96, 64, 0, 0, 0, 0, 2, 31, 0]))
 
-        # Avoid other operations while homing runs for safety, checck the status with statusword until homing finished
+        # Avoid other operations while homing runs for safety, check the status with statusword until homing finished
         print("\nWait Homing", end='')
         while (self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39,
                                                        22]
@@ -1205,176 +1186,6 @@ cp6_y = cp0_y - m.ceil(shoulder_width)
 (dMode_target_x_list, dMode_target_y_list) = calcDModeTarget(dMode_max_angle, dMode_step_angle, cp5_x)
 (dMode_velo_x_list, dMode_velo_y_list) = calcDModeVeloList(dMode_target_x_list, dMode_target_y_list, dMode_velo)
 
-""" **************************************** init hand unit **************************************** """
-
-# Establish Connection
-os.system("sudo ifconfig can0 down")
-os.system("sudo /sbin/ip link set can0 up type can bitrate 125000")
-os.system("sudo ifconfig can0 up")
-
-network = canopen.Network()
-network.connect(channel='can0', bustype='socketcan', bitrate=125000)
-
-node_1 = hand.Drive(network, 127)
-node_2 = hand.Drive(network, 126)
-
-# Default Parameters for movement (repeat times, target velocity)
-# can be changed on GUI
-hand_cycle = 1
-target_velo_1 = 0x14  # 0x14 = 20
-target_velo_2 = 0x14
-
-
-# Function to set Movement mode for Hand part
-def setMoveHand():
-    # Set mode of movement to profile position mode
-    node_1.setProfPosiMode()
-    node_2.setProfPosiMode()
-
-    # Set movement direction of driver 2 to negative direction
-    node_2.setNegDirection()
-
-    # Deactive limits of movement position
-    node_1.deactiveLimits()
-    node_2.deactiveLimits()
-
-
-# Function to execute movement of hand part
-def moveHand():
-    # Start moving to target end position
-    node_1.profPosiMode(node_1.end_position)
-    node_2.profPosiMode(node_2.end_position)
-
-    while (node_1.getActualVelocity() != 0 or node_2.getActualVelocity() != 0):
-        time.sleep(0.1)
-
-    # Check whether drive 1 and 2 reached target position
-    print("1 reached:" + str(node_1.node.sdo[0x6041].bits[10]))
-    print("2 reached:" + str(node_2.node.sdo[0x6041].bits[10]))
-
-    # Get actual position of drive 1 and 2
-    print("Position 1: " + str(node_1.getActualPosition()))
-    print("Position 2: " + str(node_2.getActualPosition()))
-    print('\n')
-
-    # Set state to Switch On
-    node_1.switchOn()
-    node_2.switchOn()
-
-    # Start moving to target start position
-    node_1.profPosiMode(node_1.start_position)
-    node_2.profPosiMode(node_2.start_position)
-
-    while (node_1.getActualVelocity() != 0 or node_2.getActualVelocity() != 0):
-        time.sleep(0.1)
-
-    # Check whether drive 1 and 2 reached target position
-    print("1 reached:" + str(node_1.node.sdo[0x6041].bits[10]))
-    print("2 reached:" + str(node_2.node.sdo[0x6041].bits[10]))
-
-    # Get actual position of drive 1 and 2
-    print("Position 1: " + str(node_1.getActualPosition()))
-    print("Position 2: " + str(node_2.getActualPosition()))
-    print('\n')
-
-    # Set state to Switch On
-    node_1.switchOn()
-    node_2.switchOn()
-
-
-# Function to calculate aperture
-# Argument is stroke of drive
-# Output is aperture
-def calcAperture(stroke):
-    # max. allowed stroke is 50, according to algorihms from Xiangdong
-    if stroke <= 50:
-        # Default length of finger
-        l_finger = 90
-        # Default thickness of finger
-        t_finger = 17
-
-        # Calculate the aperture according to algorihms from Xiangdong
-        aperture_finger = m.sin(2 * m.asin((stroke / (3 * t_finger)))) * l_finger
-
-        aperture = aperture_finger / 0.8
-
-    return aperture
-
-
-""" **************************************** Hand GUI start **************************************** """
-
-#  Layout for set up area of hand part
-frame_hand_setup = [[sg.Text('Drive 1', size=(28, 2), font="Any 20"), sg.Text('Drive 2', size=(14, 2), font="Any 20")],
-                    [sg.Text('Start point 1:', size=(11, 2), font="Any 20"),
-                     sg.Text(node_1.start_position, size=(7, 2), font="Any 20", key="start_posi_1"),
-                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"),
-                               key="set_start_posi_1"),
-                     sg.Text('Start point 2:', size=(11, 2), font="Any 20"),
-                     sg.Text(node_2.start_position, size=(7, 2), font="Any 20", key="start_posi_2"),
-                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"),
-                               key="set_start_posi_2")
-                     ],
-                    [sg.Text('End point 1:', size=(11, 2), font="Any 20"),
-                     sg.Text(node_1.end_position, size=(7, 2), font="Any 20", key="end_posi_1"),
-                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"), key="set_end_posi_1"),
-                     sg.Text('End point 2:', size=(11, 2), font="Any 20"),
-                     sg.Text(node_2.end_position, size=(7, 2), font="Any 20", key="end_posi_2"),
-                     sg.Button("set", size=(7, 2), font="Any 20", button_color=("white", "grey"), key="set_end_posi_2"),
-                     ],
-                    [sg.Text("Distance 1:", size=(11, 2), font="Any 20"),
-                     sg.Text(node_1.distance, size=(16, 2), font="Any 20", key="distance_1"),
-                     sg.Text("Distance 2:", size=(11, 2), font="Any 20"),
-                     sg.Text(node_2.distance, size=(7, 2), font="Any 20", key="distance_2")
-                     ],
-                    [sg.Text("Velocity 1 [mm/s]: ", size=(11, 2), font="Any 20"),
-                     sg.Input(target_velo_1, size=(7, 2), font="Any 20", key="velo_1"),
-                     sg.Button("save", size=(7, 2), font="Any 20", button_color=("white", "grey"), key="velo_save_1"),
-                     sg.Text("Velocity 2 [mm/s]: ", size=(11, 2), font="Any 20"),
-                     sg.Input(target_velo_2, size=(7, 2), font="Any 20", key="velo_2"),
-                     sg.Button("save", size=(7, 2), font="Any 20", button_color=("white", "grey"), key="velo_save_2")
-                     ],
-                    [sg.Text("Cycle: ", font="Any 20"),
-                     sg.Input(hand_cycle, size=(7, 2), font="Any 20", key="hand_cycle"),
-                     sg.Button("save", size=(7, 2), font="Any 20", button_color=("white", "grey"),
-                               key="hand_cycle_save")
-                     ]
-                    ]
-
-# Layout for movement operation area of hand part
-frame_hand_move = [[sg.Text("Power: ", size=(14, 2), font="Any 20"),
-                    sg.Button("ON", size=(7, 2), font="Any 20", button_color=("white", "green")),
-                    sg.Button("OFF", size=(7, 2), font="Any 20", button_color=("white", "red"))],
-                   [sg.Text("Homing Mode: ", size=(14, 2), font="Any 20"),
-                    sg.Button("Homing 1", size=(7, 2), font="Any 20", button_color=("white", "grey")),
-                    sg.Button("Homing 2", size=(7, 2), font="Any 20", button_color=("white", "grey"))],
-                   [sg.Text("Repetition Mode:", size=(14, 2), font="Any 20"),
-                    sg.Button("Start", size=(7, 2), font="Any 20", button_color=("white", "black"), key="node_start"),
-                    sg.Button("Stop", size=(7, 2), font="Any 20", button_color=("white", "black"), key="node_stop")]
-                   ]
-
-# Layout for movement infomation area of hand part
-frame_hand_info = [[sg.Text("Actual Position:", size=(14, 2), font="Any 15")],
-                   [sg.Text("Drive 1: ", size=(7, 2), font="Any 15"),
-                    sg.Text(node_1.getActualPosition() * node_1.posi_factor, size=(7, 2), font="Any 15",
-                            key="act_posi_1")],
-                   [sg.Text("Drive 2: ", size=(7, 2), font="Any 15"),
-                    sg.Text(node_2.getActualPosition() * node_2.posi_factor, size=(7, 2), font="Any 15",
-                            key="act_posi_2")],
-                   [sg.Text("Aperture: ", size=(8, 2), font="Any 15"),
-                    sg.Text(str(calcAperture(node_1.distance * node_1.posi_factor)), size=(7, 2), font="Any 15",
-                            key="aperture")],
-                   [sg.Button("Update", size=(14, 2), font="Any 15", button_color=("white", "grey"),
-                              key="hand_info_update")]
-                   ]
-
-# Layout of hand part (capsulate layout about hand part above)
-hand_window_layout = [
-    [sg.Frame("Set Up", frame_hand_setup, font="Any 20", title_color='black')],
-    [sg.Frame("Drive", frame_hand_move, font="Any 20", title_color='black'), sg.Push(),
-     sg.Frame("Info", frame_hand_info, font="Any 20", title_color='black'), sg.Push()]]
-
-""" **************************************** Hand GUI end **************************************** """
-
 # virual choice pad for grip threatment mode
 virtual_keyboard = [
     [sg.Button("CP1", size=(7, 2), font="Any 15", key="CP1"), sg.Button("CP2", size=(7, 2), font="Any 15", key="CP2"),
@@ -1500,9 +1311,6 @@ while True:
 
         X_Motor.homing(60, 300)
         Y_Motor.homing(60, 300)
-
-        node_1.switchOff()
-        node_2.switchOff()
 
         break
 
@@ -1715,143 +1523,6 @@ while True:
                 dModeMove(dMode_target_x_list, dMode_target_y_list, dMode_cycle, dMode_velo_x_list, dMode_velo_y_list,
                           cp5_x)
                 updateActPosition()
-                break
-
-            """ **************************************** Hand Event start **************************************** """
-
-            # Event set start position for drive Nr. 1 of hand part
-            if event in (None, "set_start_posi_1"):
-                node_1.start_position = node_1.getActualPosition()
-                window['start_posi_1'].update(node_1.start_position * node_1.posi_factor)
-                node_1.distance = round(abs(node_1.end_position - node_1.start_position), 2)
-                window['distance_1'].update(node_1.distance * node_1.posi_factor)
-                break
-
-            # Event set start position for drive Nr. 2 of hand part
-            if event in (None, "set_start_posi_2"):
-                node_2.start_position = node_2.getActualPosition()
-                window['start_posi_2'].update(node_2.start_position * node_2.posi_factor)
-                node_2.distance = round(abs(node_2.end_position - node_2.start_position), 2)
-                window['distance_2'].update(node_2.distance * node_2.posi_factor)
-                break
-
-            # Event set end position for drive Nr. 1 of hand part
-            if event in (None, "set_end_posi_1"):
-                node_1.end_position = node_1.getActualPosition()
-                window['end_posi_1'].update(node_1.end_position * node_1.posi_factor)
-                node_1.distance = round(abs(node_1.end_position - node_1.start_position))
-                window['distance_1'].update(node_1.distance * node_1.posi_factor)
-                break
-
-            # Event set end position for drive Nr. 2 of hand part
-            if event in (None, "set_end_posi_2"):
-                node_2.end_position = node_2.getActualPosition()
-                window['end_posi_2'].update(node_2.end_position * node_2.posi_factor)
-                node_2.distance = round(abs(node_2.end_position - node_2.start_position))
-                window['distance_2'].update(node_2.distance * node_2.posi_factor)
-                break
-
-            # Event set repeat times for movement of hand part
-            if event in (None, "hand_cycle_save"):
-                hand_cycle = int(values['hand_cycle'])
-                window['hand_cycle'].update(hand_cycle)
-                break
-
-            # Event set target velocity for drive Nr. 1 of hand part
-            if event in (None, "velo_save_1"):
-                target_velo_1 = int(values['velo_1'])
-                node_1.setTargetVelo(target_velo_1)
-                window['velo_1'].update(target_velo_1)
-                break
-
-            # Event set target velocity for drive Nr.2 of hand part
-            if event in (None, "velo_save_2"):
-                target_velo_2 = int(values['velo_2'])
-                node_2.setTargetVelo(target_velo_2)
-                window['velo_1'].update(target_velo_1)
-                break
-
-            # Event set drive state of hand part to switch on
-            if event in (None, "ON"):
-                node_1.switchOn()
-                node_2.switchOn()
-                break
-
-            # Event set both drives state of hand part to switch on
-            if event in (None, "OFF"):
-                node_1.switchOff()
-                node_2.switchOff()
-                break
-
-            # Event set homing position for drive Nr.1
-            if event in (None, "Homing 1"):
-
-                node_1.switchOn()
-
-                # Set modes of operation to homing
-                node_1.setHomingMode()
-
-                # Set homing position
-                node_1.homing()
-
-                while (node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0):
-                    time.sleep(0.2)
-                print("Homing finisched " + str(node_1.node.sdo[0x6041].bits[12]))
-                print("Homing Fehler " + str(node_1.node.sdo[0x6041].bits[13]))
-
-                node_1.switchOff()
-
-                break
-
-            # Event set homing position for drive Nr.1
-            if event in (None, "Homing 2"):
-
-                node_2.switchOn()
-
-                # Set modes of operation to homing
-                node_2.setHomingMode()
-                # Set homing position
-                node_2.homing()
-
-                while (node_1.node.sdo[0x606c].raw != 0 and node_2.node.sdo[0x606c].raw != 0):
-                    time.sleep(0.2)
-                print("Homing finisched " + str(node_2.node.sdo[0x6041].bits[12]))
-                print("Homing Fehler " + str(node_2.node.sdo[0x6041].bits[13]))
-
-                node_2.switchOff()
-
-                break
-
-            # Event start movement of both drives
-            if event in (None, "node_start"):
-
-                node_1.switchOn()
-                node_2.switchOn()
-
-                setMoveHand()
-
-                for i in range(0, hand_cycle):
-                    moveHand()
-
-                node_1.switchOff()
-                node_2.switchOff()
-
-                window['act_posi_1'].update(node_1.getActualPosition() * node_1.posi_factor)
-                window['act_posi_2'].update(node_2.getActualPosition() * node_2.posi_factor)
-                window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
-
-                break
-
-            # Event stop movement of both drives
-            if event in (None, "node_stop"):
-                node_1.stopMove()
-                node_2.stopMove()
-                break
-
-            if event in (None, 'hand_info_update'):
-                window['act_posi_1'].update(node_1.getActualPosition() * node_1.posi_factor)
-                window['act_posi_2'].update(node_2.getActualPosition() * node_2.posi_factor)
-                window['aperture'].update(str(calcAperture(node_1.distance * node_1.posi_factor)))
                 break
 
             # If Motionbstopped while driving or an error has occurred, the loop is interrupted
