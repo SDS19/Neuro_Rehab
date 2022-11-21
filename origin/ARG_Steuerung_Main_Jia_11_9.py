@@ -68,16 +68,17 @@ class Motor:
 
         self.s.connect((IP_Adress, Port))
         print(self.Axis + ' Socket created')
+
         """ new method """
         # self.bus_connection(self.ip, self.port)
-
-        """ ******************** end 16.11.2022 ******************** """
 
         # Initialize
         self.initialize()
 
         # Calculate the SI Unit Factor
         self.calcSIUnitFactor()
+
+    """ ******************** new method: start ******************** """
 
     def bus_connection(self, ip, port):
         try:
@@ -87,9 +88,16 @@ class Motor:
         self.s.connect((ip, port))
         print(self.axis + ': socket created!')
 
+    def init_state_machine(self):
+        self.set_mode(1)  # Profile Position Mode
+        self.shut_down()
+        self.switch_on()
+        self.operation_enable()
+
+    """ ******************** new method: end ******************** """
+
     # Function to initialize the Motor
     def initialize(self):
-        # Call of the function sendCommand to start the State Machine with the previously defined telegrams (Manual: Visualisation State Machine)
         # self.sendCommand(self.status_array)
         self.sendCommand(self.shutdown_array)
         # self.sendCommand(self.status_array)
@@ -97,19 +105,34 @@ class Motor:
         # self.sendCommand(self.status_array)
         self.sendCommand(self.enableOperation_array)
 
+    """ new method """
     def send_command(self, data):
         self.s.send(data)
         return list(self.s.recv(24))
 
-    # check => Function to send command and receive data
     def sendCommand(self, data):
         self.s.send(data)
         res = self.s.recv(24)
         return list(res)
 
+    """ new method """
+    def status(self):
+        return self.send_command(self.status_array)
+
     # Function to request status
     def requestStatus(self):
         return self.sendCommand(self.status_array)
+
+    """ new method """
+    def set_mode(self, mode):
+        # 6060h: Modes of Operation (P174 N.17)
+        self.send_command(bytearray([0, 0, 0, 0, 0, 14, 0, 43, 13, 1, 0, 0, 96, 96, 0, 0, 0, 0, 1, mode]))
+        # 6061h: Modes Display (P174 N.19)
+        while (self.send_command(bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 97, 0, 0, 0, 0, 1])) !=
+               [0, 0, 0, 0, 0, 14, 0, 43, 13, 0, 0, 0, 96, 97, 0, 0, 0, 0, 1, mode]):  # P174 N.20
+            print("wait for setting mode...")
+            time.sleep(0.1)
+        print("set mode success!")
 
     # Function to set movement mode and check with statusword
     def setMode(self, mode):
@@ -120,7 +143,14 @@ class Motor:
             time.sleep(0.1)
         print(str(self.Axis) + 'set mode ' + str(mode) + " successfully")
 
-    # check
+    def shut_down(self):
+        self.send_command(self.reset_array)
+        self.send_command(self.shutdown_array)
+        while (self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 33, 6]  # Ready To Switch On
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 33, 22]
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 33, 2]):
+            print("wait for shutdown")
+            time.sleep(1)
     # Function to set Status Shut Down and check with statusword. Checking several Statuswords because of various options. look at Bit assignment Statusword, data package in user manual
     def setShutDown(self):
         self.sendCommand(self.reset_array)
@@ -131,7 +161,13 @@ class Motor:
             print("wait for SHUT DOWN")
             time.sleep(1)
 
-    # check
+    def switch_on(self):
+        self.send_command(self.switchOn_array)
+        while (self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 35, 6]  # Switched On
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 35, 22]
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 35, 2]):
+            print("wait for switch on")
+            time.sleep(1)
     # Function to set Status Switch On and check with statusword. Checking several Statuswords because of various options. look at Bit assignment Statusword, data package in user manual
     def setSwitchOn(self):
         self.sendCommand(self.switchOn_array)
@@ -141,17 +177,20 @@ class Motor:
             print("wait for SWITCH ON")
             time.sleep(1)
 
+    def operation_enable(self):
+        self.send_command(self.enableOperation_array)
+        while (self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 6]
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 22]
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 2]):
+            print("wait for operation enable")
+            time.sleep(1)
     # Function to set Status Operation Enable and check with statusword. Checking several Statuswords because of various options. look at Bit assignment Statusword, data package in user manual
     def setEnableOperation(self):
         self.sendCommand(self.enableOperation_array)
-        while (self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39,
-                                                       6]
-               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           39, 22]
-               and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2,
-                                                           39, 2]):
+        while (self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 6]
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 22]
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 2]):
             print("wait for OPERATION ENABLE")
-
             time.sleep(1)
 
     # Function to read digiral Input
@@ -163,15 +202,28 @@ class Motor:
         self.sendCommand(self.stop_array)
         print("Movement is stopped")
 
-    # Function to check motor error ???
-    def checkError(self):
-        if (self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 22]
-                or self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 6]
-                or self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 34]
-                or self.sendCommand(self.status_array) == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 2]):
+    """ new method """
+    def check_error(self):
+        if (self.status() == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 22]
+                or self.status() == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 6]
+                or self.status() == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 34]
+                or self.status() == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 2]):
             self.error = 1
         else:
             self.error = 0
+    # Function to check motor error ???
+    def checkError(self):
+        if (self.status() == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 22]
+                or self.status() == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 6]
+                or self.status() == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 34]
+                or self.status() == [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 2]):
+            self.error = 1
+        else:
+            self.error = 0
+
+    def get_actual_velocity(self):
+        vel = self.send_command(bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 108, 0, 0, 0, 0, 4]))
+        return int.from_bytes(vel[19:], byteorder='little')
 
     # Function to get actual Velocity of motor with read object 606Ch and convert it from Byte to integer
     def actualVelocity(self):
@@ -217,6 +269,9 @@ class Motor:
         # print("SIUnit scale: "+ str(ans_position_scale))
         return self.SI_unit_factor
 
+    """ new method """
+    def generate_byte_array(self, i):
+        return list(i.to_bytes(4, byteorder='little'))
     # Function to convert the to send data from Integer(dec) to Four Bytes in Telegram(dec)
     def convertToFourByte(self, x):
         # Transfer the input Integer with SI unit factor, to fit the value dimension of motor
@@ -240,6 +295,7 @@ class Motor:
             byte_list[0] = int(x - ((byte_list[3] * m.pow(256, 3)) + (byte_list[2] * m.pow(256, 2)) + (byte_list[1] * 256)))
         return byte_list
 
+    """ new method """
     def test_homing(self):
         self.send_command(self.enableOperation_array)
         self.setMode(6)
@@ -257,11 +313,11 @@ class Motor:
         self.send_command(bytearray([0, 0, 0, 0, 0, 15, 0, 43, 13, 1, 0, 0, 96, 64, 0, 0, 0, 0, 2, 31, 0]))
 
         # 6041h Statusword
-        while (self.send_command(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 22]
-               and self.send_command(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 6]  # ???
-               and self.send_command(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 34]  # ???
-               and self.send_command(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 2]):  # ???
-            if self.send_command(self.DInputs_array) == [0, 0, 0, 0, 0, 17, 0, 43, 13, 0, 0, 0, 96, 253, 0, 0, 0, 0, 4, 8, 0, 66, 0]:
+        while (self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 39, 22]
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 6]  # ???
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 34]  # ???
+               and self.status() != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 2]):  # ???
+            if self.status() == [0, 0, 0, 0, 0, 17, 0, 43, 13, 0, 0, 0, 96, 253, 0, 0, 0, 0, 4, 8, 0, 66, 0]:
                 break
             time.sleep(0.1)
             print("Homing...")
@@ -309,16 +365,15 @@ class Motor:
             print(".", end='')
         print("\n" + self.Axis + "Homing finished!")
 
-    """ ********** 20.11.2022 start ********** """
+    """ new method """
+    def profile_position_mode(self):
+        self.send_command(self.enableOperation_array)
+        self.set_mode(1)
 
     # Function to set and start movement with profile position mode (manuel page 104)
     # Arguments are (velocity, accleretion, target position)
     def ProfPosiMode(self, velo, acc, posi):
-
-        # Set Modes of Operation to profile position mode (Byte19 = 1) with Object 6060h
         self.setMode(1)
-
-        # Set state of motor to operation enable
         self.sendCommand(self.enableOperation_array)
 
         # Convert input velocity to four bytes
@@ -367,12 +422,15 @@ class Motor:
                                                            8, 22]):
             break
 
+    """ new method """
+    def profile_velocity_mode(self):
+        self.send_command(self.enableOperation_array)
+        self.set_mode(3)
+
     # Function to set Modes of Operation to Profile Velocity Mode (Byte 19 = 3, manuel page 104)
     # Set mode function of profile velocity mode is seperat from start movement function, because start movement funtion will be recursively called and it is time sensitive
     def setProfVeloMode(self):
         self.setMode(3)
-
-        # Set state of motor to operation enable
         self.sendCommand(self.enableOperation_array)
 
     # Parameterize and start movement of profile velocity mode
@@ -609,14 +667,10 @@ def posNumToFourByte(num):
 # Function to convert negative number to four bytes
 def negNumToFourByte(num):
     byte_list = [255, 255, 255, 255]
-
     num = abs(num)
-
     byte_list = posNumToFourByte(num)
-
     for i in range(0, 4):
         byte_list[i] = 255 - byte_list[i]
-
     return byte_list
 
 
@@ -680,7 +734,6 @@ def checkDirection(s, t, forward):
         forward = True
     else:
         forward = False
-
     return forward
 
 
