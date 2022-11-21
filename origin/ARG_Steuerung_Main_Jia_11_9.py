@@ -27,6 +27,11 @@ class Motor:
         self.error = 0  # Define Error state of Motor
         self.position = 250.0  # Define actual position of Motor
 
+        """ new variable """
+        self.ip = IP_Adress
+        self.port = Port
+        self.axis = Axis
+
         """ check => Statusword 6041h to request status """
         self.status_array = bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2])
         # print(status_array)
@@ -55,8 +60,6 @@ class Motor:
         # Read Obejct 6092h subindex 1 for the feed rate
         self.feedrate_array = bytearray([0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 0, 0, 96, 146, 1, 0, 0, 0, 4])
 
-        """ ******************** start 16.11.2022 ******************** """
-
         # Establish bus connection
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -65,6 +68,8 @@ class Motor:
 
         self.s.connect((IP_Adress, Port))
         print(self.Axis + ' Socket created')
+        """ new method """
+        # self.bus_connection(self.ip, self.port)
 
         """ ******************** end 16.11.2022 ******************** """
 
@@ -74,21 +79,29 @@ class Motor:
         # Calculate the SI Unit Factor
         self.calcSIUnitFactor()
 
+    def bus_connection(self, ip, port):
+        try:
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except socket.error:
+            print('failed to create socket!')
+        self.s.connect((ip, port))
+        print(self.axis + ': socket created!')
+
     # Function to initialize the Motor
     def initialize(self):
         # Call of the function sendCommand to start the State Machine with the previously defined telegrams (Manual: Visualisation State Machine)
-        self.sendCommand(self.status_array)
+        # self.sendCommand(self.status_array)
         self.sendCommand(self.shutdown_array)
-        self.sendCommand(self.status_array)
+        # self.sendCommand(self.status_array)
         self.sendCommand(self.switchOn_array)
-        self.sendCommand(self.status_array)
+        # self.sendCommand(self.status_array)
         self.sendCommand(self.enableOperation_array)
 
     def send_command(self, data):
         self.s.send(data)
         return list(self.s.recv(24))
 
-    # check => Functio to send command and recive data
+    # check => Function to send command and receive data
     def sendCommand(self, data):
         self.s.send(data)
         res = self.s.recv(24)
@@ -227,8 +240,6 @@ class Motor:
             byte_list[0] = int(x - ((byte_list[3] * m.pow(256, 3)) + (byte_list[2] * m.pow(256, 2)) + (byte_list[1] * 256)))
         return byte_list
 
-    """ ********** 20.11.2022 start ********** """
-
     def test_homing(self):
         self.send_command(self.enableOperation_array)
         self.setMode(6)
@@ -296,7 +307,9 @@ class Motor:
                and self.sendCommand(self.status_array) != [0, 0, 0, 0, 0, 15, 0, 43, 13, 0, 0, 0, 96, 65, 0, 0, 0, 0, 2, 8, 2]):
             time.sleep(0.01)
             print(".", end='')
-        print("\n" + self.Axis + "Homing finisched")
+        print("\n" + self.Axis + "Homing finished!")
+
+    """ ********** 20.11.2022 start ********** """
 
     # Function to set and start movement with profile position mode (manuel page 104)
     # Arguments are (velocity, accleretion, target position)
