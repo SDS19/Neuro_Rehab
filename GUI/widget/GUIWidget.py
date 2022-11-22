@@ -1,13 +1,16 @@
 import sys
 import time
 from PyQt5.Qt import *
+
 from GUI.widget.Worker import StartThread
+
+run_cycle = 3
 
 
 class InputWidget(QWidget):
-    def __init__(self, cycle, node_1, node_2):
+    def __init__(self, node_1, node_2):
         super().__init__()
-        self.cycle = cycle
+
         self.node_1 = node_1
         self.node_2 = node_2
 
@@ -56,7 +59,7 @@ class InputWidget(QWidget):
         """ ********** cycle ********** """
 
         self.cycle_label = QLabel("cycle: ", self)
-        self.cycle_value = QLineEdit(self.cycle, self)
+        self.cycle_value = QLineEdit(str(run_cycle), self)
         self.cycle_btn = QPushButton("Save", self)
 
         layout.addWidget(self.cycle_label, 3, 0)
@@ -89,13 +92,13 @@ class InputWidget(QWidget):
         self.node_2.set_target_velocity(self.node_2.velocity)
 
     def cycle_btn_slot(self):
-        self.cycle = int(self.cycle_value.text())
+        run_cycle = int(self.cycle_value.text())
+        print(run_cycle)
 
 
 class InfoWidget(QWidget):
-    def __init__(self, cycle, node_1, node_2):
+    def __init__(self, node_1, node_2):
         super().__init__()
-        self.cycle = cycle
         self.node_1 = node_1
         self.node_2 = node_2
 
@@ -155,9 +158,8 @@ class InfoWidget(QWidget):
 
 
 class ControlWidget(QWidget):
-    def __init__(self, cycle, node_1, node_2):
+    def __init__(self, node_1, node_2):
         super().__init__()
-        self.cycle = cycle
         self.node_1 = node_1
         self.node_2 = node_2
 
@@ -177,18 +179,20 @@ class ControlWidget(QWidget):
         self.stop_btn.pressed.connect(self.stop_btn_slot)
 
     def start_btn_slot(self):
-        worker = StartThread(self.cycle, self.node_1, self.node_2)
-        worker.start()
-        worker.finished.connect(lambda: print("Hand move finished!"))
+        # worker = StartThread(self.cycle, self.node_1, self.node_2)
+        # worker.start()
+        # worker.finished.connect(lambda: print("Hand move finished!"))
 
-        # for i in range(0, self.node.cycle):
-        #     self.node.move_to_target_position(self.node.start_position)
-        #     while self.node.get_actual_velocity() != 0:
-        #         time.sleep(0.01)
-        #
-        #     self.node.move_to_target_position(self.node.end_position)
-        #     while self.node.get_actual_velocity() != 0:
-        #         time.sleep(0.01)
+        for i in range(0, run_cycle):
+            self.node_1.move_to_target_position(self.node_1.start_position)
+            self.node_2.move_to_target_position(self.node_2.start_position)
+            while self.node_1.get_actual_velocity() != 0 and self.node_2.get_actual_velocity() != 0:
+                time.sleep(0.01)
+
+            self.node_1.move_to_target_position(self.node_1.end_position)
+            self.node_2.move_to_target_position(self.node_2.end_position)
+            while self.node_1.get_actual_velocity() != 0 and self.node_2.get_actual_velocity() != 0:
+                time.sleep(0.01)
 
     def stop_btn_slot(self):
         self.node_1.shut_down()
@@ -209,7 +213,7 @@ class HandWidget(QWidget):
         self.setLayout(layout)
 
         layout.addWidget(InputWidget(self.cycle, self.node_1, self.node_2))
-        layout.addWidget(InfoWidget(self.cycle, self.node_1, self.node_2))
+        layout.addWidget(InfoWidget(self.node_1, self.node_2))
         layout.addWidget(ControlWidget(self.cycle, self.node_1, self.node_2))
 
 
